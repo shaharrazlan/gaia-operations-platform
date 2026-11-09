@@ -26,6 +26,8 @@ builder.Services.AddDbContext<GaiaDbContext>((services, options) =>
 });
 builder.Services.AddScoped<IOperationRepository, EfOperationRepository>();
 builder.Services.AddScoped<OperationService>();
+builder.Services.AddScoped<CatalogService>();
+builder.Services.AddSingleton(TimeProvider.System);
 
 // Code operations (IOperationHandler). Today only weather: real Open-Meteo, or a fixed fake answer.
 var weather = builder.Configuration.GetSection("Weather").Get<WeatherOptions>() ?? new WeatherOptions();
@@ -55,7 +57,7 @@ builder.Services.AddControllers()
                 .Select(e => e.Key[2..])
                 .FirstOrDefault();
             var problem = ProblemDetailsMapper.Problem(StatusCodes.Status400BadRequest, "Invalid request",
-                field is null ? "The request body must be JSON like {\"fieldA\": \"7\", \"fieldB\": \"2\"}." : $"'{field}' must be text or a number.",
+                field is null ? "The request body must be valid JSON (see /swagger for examples)." : $"'{field}' has a value of the wrong type or an unknown value.",
                 ErrorCodes.Validation, field);
             return new BadRequestObjectResult(problem) { ContentTypes = { "application/problem+json" } };
         });

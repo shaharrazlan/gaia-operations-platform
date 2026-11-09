@@ -10,8 +10,22 @@ namespace Gaia.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/operations")]
-public class OperationsController(OperationService operations) : ControllerBase
+public class OperationsController(OperationService operations, CatalogService catalog) : ControllerBase
 {
+    /// <summary>Adds a custom formula operation. It can be run right away, no restart needed (R4.AC1).</summary>
+    /// <response code="201">The new operation, including its "version".</response>
+    /// <response code="400">validation_error / formula_invalid — "field" says which input is wrong.</response>
+    /// <response code="409">duplicate_id — the id is taken (also by a deleted operation).</response>
+    [HttpPost]
+    [ProducesResponseType<OperationDto>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    public async Task<ActionResult<OperationDto>> Create(OperationUpsertDto request, CancellationToken cancellationToken)
+    {
+        var created = OperationDto.From(await catalog.CreateAsync(request.ToInput(), cancellationToken));
+        return Created($"/api/operations/{created.Id}", created);
+    }
+
     /// <summary>Lists the operations users can run (enabled, not deleted), ordered by name.</summary>
     [HttpGet]
     public async Task<IEnumerable<OperationDto>> List(CancellationToken cancellationToken) =>
