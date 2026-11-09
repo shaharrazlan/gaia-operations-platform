@@ -134,6 +134,7 @@ button:disabled {
 }
 
 .result {
+  display: block; /* <output> is inline by default */
   margin-top: 16px;
   padding: 16px;
   border-radius: 8px;

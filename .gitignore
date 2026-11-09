@@ -491,3 +491,5 @@ client/test-results/
 client/playwright-report/
 # Server logs (R10, R11)
 logs/
+# Local preview/tooling config
+.claude/
