@@ -97,6 +97,10 @@ button {
   min-width: 0;
 }
 
+input[aria-invalid='true'] {
+  border-color: var(--error-text);
+}
+
 input:focus,
 select:focus,
 button:focus-visible {
