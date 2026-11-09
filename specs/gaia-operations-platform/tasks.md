@@ -249,13 +249,14 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 ## S6 · Management API   (Should) · ~1.75 h
 
-- [ ] **T28 · CatalogService create rules**
+- [x] **T28 · CatalogService create rules**
   - Covers: R4.AC4 · Step S6
   - Files: `src/Gaia.Core/Services/CatalogService.cs`, `tests/…/CatalogServiceTests.cs`
   - Tests: unit "R4.AC4: invalid slug, missing name, or bad formula is rejected"; unit "R4.AC4: duplicate id (incl. soft-deleted) → Conflict duplicate_id"; unit "T28: created operations are always custom"
   - Depends on: T24
   - Done when: `UNIT` green.
-  - Commit: —
+  - Commit: (this commit — see git log "T28:")
+  - Extra files (needed to compile the new repository contract): `IOperationRepository.cs` (AddAsync, UpdateAsync), `EfOperationRepository.cs` (both implemented now; duplicate-key race → 409, rowversion check → 409), `GaiaException.cs` (ConflictException takes a field), `OperationServiceTests.cs` (fake repo). `TimeProvider` injected for deterministic timestamps.
 
 - [ ] **T29 · CatalogService update and delete rules**
   - Covers: R4.AC6 · Step S6

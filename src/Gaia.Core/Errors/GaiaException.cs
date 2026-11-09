@@ -30,5 +30,5 @@ public sealed class ExternalServiceException(string message, string code = Error
     : GaiaException(code, message);
 
 /// <summary>The change clashes with the current state: duplicate id, or someone else saved first. → 409</summary>
-public sealed class ConflictException(string message, string code)
-    : GaiaException(code, message);
+public sealed class ConflictException(string message, string code, string? field = null)
+    : GaiaException(code, message, field);

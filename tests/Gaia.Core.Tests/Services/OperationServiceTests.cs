@@ -28,6 +28,12 @@ public class OperationServiceTests
 
         public Task<OperationDefinition?> FindAsync(string id, CancellationToken cancellationToken = default) =>
             Task.FromResult(operations.FirstOrDefault(o => o.Id == id));
+
+        public Task<OperationDefinition> AddAsync(OperationDefinition operation, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task<OperationDefinition> UpdateAsync(OperationDefinition operation, byte[] expectedVersion,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 
     private sealed class FakeHandler(string id, string answer) : IOperationHandler
