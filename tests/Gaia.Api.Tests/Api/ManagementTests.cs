@@ -181,6 +181,75 @@ public class ManagementTests(GaiaApiFactory factory) : IClassFixture<GaiaApiFact
         Assert.Equal("operation_not_found", await CodeOf(response));
     }
 
+    // --- DELETE and the management list (T32) ---
+
+    [Fact]
+    public async Task R4_AC3_DELETE_hides_the_operation_execute_is_404_and_the_row_is_kept()
+    {
+        var id = NewId("temp");
+        await CreateAsync(id);
+
+        var response = await _client.DeleteAsync($"/api/operations/{id}");
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.DoesNotContain(id, await CatalogIdsAsync());
+        Assert.Equal("HTTP 404", await ExecuteAsync(id, "1", "2"));
+        await using var db = factory.CreateDbContext();
+        Assert.True((await db.Operations.FindAsync(id))!.IsDeleted);   // kept, so its history stays (R7)
+    }
+
+    [Fact]
+    public async Task R4_AC6_DELETE_on_a_system_operation_is_400_system_cannot_delete()
+    {
+        var response = await _client.DeleteAsync("/api/operations/add");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("system_cannot_delete", await CodeOf(response));
+        Assert.Contains("add", await CatalogIdsAsync());
+    }
+
+    [Fact]
+    public async Task T32_DELETE_on_an_unknown_id_is_404()
+    {
+        var response = await _client.DeleteAsync("/api/operations/no-such-op");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("operation_not_found", await CodeOf(response));
+    }
+
+    [Fact]
+    public async Task T32_includeDisabled_true_also_returns_disabled_operations()
+    {
+        var id = NewId("off");
+        var created = await CreateAsync(id);
+        var disable = await _client.PutAsJsonAsync($"/api/operations/{id}", DisabledCopy(created));
+        Assert.Equal(HttpStatusCode.OK, disable.StatusCode);
+
+        var all = await _client.GetFromJsonAsync<JsonElement[]>("/api/operations?includeDisabled=true");
+
+        var off = Assert.Single(all!, o => o.GetProperty("id").GetString() == id);
+        Assert.False(off.GetProperty("isEnabled").GetBoolean());
+        Assert.DoesNotContain(id, await CatalogIdsAsync());
+    }
+
+    private static Dictionary<string, object?> DisabledCopy(JsonElement loaded)
+    {
+        var body = JsonSerializer.Deserialize<Dictionary<string, object?>>(loaded.GetRawText())!;
+        body["isEnabled"] = false;
+        return body;
+    }
+
+    [Fact]
+    public async Task R4_AC5_swagger_json_lists_POST_PUT_and_DELETE()
+    {
+        using var document = JsonDocument.Parse(await _client.GetStringAsync("/swagger/v1/swagger.json"));
+        var paths = document.RootElement.GetProperty("paths");
+
+        Assert.True(paths.GetProperty("/api/operations").TryGetProperty("post", out _));
+        Assert.True(paths.GetProperty("/api/operations/{id}").TryGetProperty("put", out _));
+        Assert.True(paths.GetProperty("/api/operations/{id}").TryGetProperty("delete", out _));
+    }
+
     [Fact]
     public async Task R4_AC4_an_unknown_kind_is_400_naming_the_field()
     {

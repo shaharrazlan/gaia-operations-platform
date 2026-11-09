@@ -282,16 +282,17 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: integration "R4.AC2: changed formula is used by the next execute"; integration "R4.AC6: PUT formula on divide or weather → 400 system_logic_readonly; rename succeeds"; integration "R4.AC7: two PUTs with the same version → 200 then 409 edit_conflict, first values kept"; integration "R4.AC7: PUT with fresh version → 200"
   - Depends on: T30
   - Done when: `INT` green.
-  - Commit: (T31)
+  - Commit: cfce4a5
   - Note: the EF update with the original `Version` was already written in T28 (needed to compile); this task adds the endpoint and proves it against real SQL Server rowversion.
 
-- [ ] **T32 · DELETE and management listing**
+- [x] **T32 · DELETE and management listing**
   - Covers: R4.AC3, R4.AC5 · Step S6
   - Files: `OperationsController.cs` (DELETE, `includeDisabled`)
   - Tests: integration "R4.AC3: DELETE hides op, execute → 404, its runs remain"; integration "R4.AC5: swagger.json lists POST, PUT and DELETE"; integration "T32: includeDisabled=true returns disabled ops"
   - Depends on: T31
   - Done when: `INT` green.
-  - Commit: —
+  - Commit: (T32)
+  - Note: "its runs remain" is proven as "the row is kept (soft delete)"; history rows arrive in S8, whose T41+ tests re-check it. `includeDisabled` is open until S12 adds the key.
 
 ## S7 · Manage operations view   (Should) · ~1.75 h
 

@@ -43,10 +43,33 @@ public class OperationsController(OperationService operations, CatalogService ca
     public async Task<OperationDto> Update(string id, OperationUpsertDto request, CancellationToken cancellationToken) =>
         OperationDto.From(await catalog.UpdateAsync(id, request.ToInput(), cancellationToken));
 
-    /// <summary>Lists the operations users can run (enabled, not deleted), ordered by name.</summary>
+    /// <summary>
+    /// Lists the operations users can run (enabled, not deleted), ordered by name.
+    /// With includeDisabled=true it is the management list: disabled operations are included too.
+    /// </summary>
     [HttpGet]
-    public async Task<IEnumerable<OperationDto>> List(CancellationToken cancellationToken) =>
-        (await operations.ListAsync(cancellationToken)).Select(OperationDto.From);
+    public async Task<IEnumerable<OperationDto>> List(bool includeDisabled, CancellationToken cancellationToken) =>
+        (includeDisabled
+            ? await catalog.ListAllAsync(cancellationToken)
+            : await operations.ListAsync(cancellationToken))
+        .Select(OperationDto.From);
+
+    /// <summary>
+    /// Removes custom operation {id} from the catalog. Its row and history are kept; the id stays taken (R4.AC3).
+    /// Built-in operations can't be deleted — disable them instead.
+    /// </summary>
+    /// <response code="204">Removed.</response>
+    /// <response code="400">system_cannot_delete.</response>
+    /// <response code="404">operation_not_found.</response>
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
+    {
+        await catalog.DeleteAsync(id, cancellationToken);
+        return NoContent();
+    }
 
     /// <summary>Runs operation {id} on Field A and Field B and returns the result.</summary>
     /// <response code="400">validation_error — a field is missing or not valid for this operation.</response>
