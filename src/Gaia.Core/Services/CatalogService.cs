@@ -65,6 +65,99 @@ public sealed partial class CatalogService(IOperationRepository repository, Time
         }, cancellationToken);
     }
 
+    /// <summary>The management list: enabled and disabled operations (never deleted ones).</summary>
+    public Task<IReadOnlyList<OperationDefinition>> ListAllAsync(CancellationToken cancellationToken = default) =>
+        repository.ListAsync(includeDisabled: true, cancellationToken);
+
+    /// <summary>
+    /// Replaces an operation's definition, but only if nobody saved it since the operator loaded
+    /// <see cref="OperationInput.Version"/> (R4.AC7). System operations keep their logic (R4.AC6).
+    /// </summary>
+    public async Task<OperationDefinition> UpdateAsync(string id, OperationInput input, CancellationToken cancellationToken = default)
+    {
+        var current = await FindExistingAsync(id, cancellationToken);
+        if (input.Id is not null && input.Id != id)
+            throw new ValidationException("Id can't be changed. Create a new operation instead.", "id");
+        var version = DecodeVersion(input.Version);
+        var details = CheckDetails(input);
+
+        string? formula;
+        if (current.IsSystem)
+        {
+            // Built-in logic is locked: only presentation (name, labels) and on/off may change.
+            RejectLogicChange(details.Kind != current.Kind, "kind");
+            RejectLogicChange(details.InputType != current.InputType, "inputType");
+            RejectLogicChange(NullIfBlank(input.Formula) != current.Formula, "formula");
+            formula = current.Formula;
+        }
+        else
+        {
+            formula = CheckFormula(input.Formula);
+        }
+
+        return await repository.UpdateAsync(new OperationDefinition
+        {
+            Id = current.Id,
+            Name = details.Name,
+            Kind = details.Kind,
+            FieldALabel = details.FieldALabel,
+            FieldBLabel = details.FieldBLabel,
+            InputType = details.InputType,
+            Formula = formula,
+            IsSystem = current.IsSystem,
+            IsEnabled = input.IsEnabled,
+            IsDeleted = false,
+            CreatedAtUtc = current.CreatedAtUtc,
+            UpdatedAtUtc = time.GetUtcNow().UtcDateTime,
+        }, version, cancellationToken);
+    }
+
+    /// <summary>
+    /// Removes a custom operation from the catalog. The row stays (soft delete) so its history is kept (R4.AC3).
+    /// </summary>
+    public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
+    {
+        var current = await FindExistingAsync(id, cancellationToken);
+        if (current.IsSystem)
+            throw new ValidationException(
+                $"'{id}' is a built-in operation and can't be deleted. You can disable it instead.", code: ErrorCodes.SystemCannotDelete);
+
+        var version = current.Version;
+        current.IsDeleted = true;
+        current.UpdatedAtUtc = time.GetUtcNow().UtcDateTime;
+        await repository.UpdateAsync(current, version, cancellationToken);
+    }
+
+    private async Task<OperationDefinition> FindExistingAsync(string id, CancellationToken cancellationToken) =>
+        await repository.FindAsync(id, cancellationToken) is { IsDeleted: false } operation
+            ? operation
+            : throw new NotFoundException($"Operation '{id}' was not found.");
+
+    private static byte[] DecodeVersion(string? version)
+    {
+        const string message = "Version is required: send back the 'version' you received when you loaded the operation.";
+        if (string.IsNullOrEmpty(version))
+            throw new ValidationException(message, "version");
+        try
+        {
+            return Convert.FromBase64String(version);
+        }
+        catch (FormatException)
+        {
+            throw new ValidationException(message, "version");
+        }
+    }
+
+    private static void RejectLogicChange(bool changed, string field)
+    {
+        if (changed)
+            throw new ValidationException(
+                $"This is a built-in operation: its {field} can't be changed. You can rename or disable it.",
+                field, ErrorCodes.SystemLogicReadonly);
+    }
+
+    private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     private sealed record Details(string Name, OperationKind Kind, string FieldALabel, string FieldBLabel, InputType InputType);
 
     /// <summary>Checks the fields every operation needs and returns them trimmed.</summary>

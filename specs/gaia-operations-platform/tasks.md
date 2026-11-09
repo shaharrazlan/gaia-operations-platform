@@ -255,16 +255,17 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: unit "R4.AC4: invalid slug, missing name, or bad formula is rejected"; unit "R4.AC4: duplicate id (incl. soft-deleted) → Conflict duplicate_id"; unit "T28: created operations are always custom"
   - Depends on: T24
   - Done when: `UNIT` green.
-  - Commit: (this commit — see git log "T28:")
+  - Commit: d669254
   - Extra files (needed to compile the new repository contract): `IOperationRepository.cs` (AddAsync, UpdateAsync), `EfOperationRepository.cs` (both implemented now; duplicate-key race → 409, rowversion check → 409), `GaiaException.cs` (ConflictException takes a field), `OperationServiceTests.cs` (fake repo). `TimeProvider` injected for deterministic timestamps.
 
-- [ ] **T29 · CatalogService update and delete rules**
+- [x] **T29 · CatalogService update and delete rules**
   - Covers: R4.AC6 · Step S6
   - Files: `CatalogService.cs`, `CatalogServiceTests.cs`
   - Tests: unit "R4.AC6: system op — rename and disable allowed"; unit "R4.AC6: system op — formula/kind/input type change → system_logic_readonly"; unit "R4.AC6: deleting a system op → system_cannot_delete"
   - Depends on: T28
   - Done when: `UNIT` green.
-  - Commit: —
+  - Commit: (T29)
+  - Also: unit tests for R4.AC2/AC3/AC7 rules (version required, stale version → edit_conflict, unknown/deleted → 404, body id must match), and `ListAllAsync` for the management list. Labels of system ops may change too (presentation, not logic).
 
 - [ ] **T30 · POST /operations**
   - Covers: R4.AC1, R4.AC4 · Step S6

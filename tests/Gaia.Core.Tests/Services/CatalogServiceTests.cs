@@ -180,6 +180,182 @@ public class CatalogServiceTests
         Assert.Same(created, Assert.Single(repository.Rows));
     }
 
+    // --- Update and delete (T29) ---
+
+    private static readonly string V1 = Convert.ToBase64String([1]);
+
+    /// <summary>The input an operator would send back after loading <paramref name="op"/> unchanged.</summary>
+    private static OperationInput Same(OperationDefinition op, string? version = null) =>
+        new(op.Id, op.Name, op.Kind, op.FieldALabel, op.FieldBLabel, op.InputType, op.Formula, op.IsEnabled,
+            version ?? Convert.ToBase64String(op.Version));
+
+    [Fact]
+    public async Task R4_AC6_a_system_operation_can_be_renamed_and_disabled()
+    {
+        var repository = new FakeRepository(Op("divide", "A / B", system: true));
+
+        var saved = await Service(repository).UpdateAsync("divide",
+            Same(repository.Rows[0]) with { Name = "Division", FieldALabel = "Dividend", IsEnabled = false });
+
+        Assert.Equal("Division", saved.Name);
+        Assert.Equal("Dividend", saved.FieldALabel);
+        Assert.False(saved.IsEnabled);
+        Assert.True(saved.IsSystem);
+        Assert.Equal("A / B", saved.Formula);
+        Assert.Equal(Now, saved.UpdatedAtUtc);
+    }
+
+    [Fact]
+    public async Task R4_AC6_a_code_operation_can_be_renamed_with_no_formula()
+    {
+        var repository = new FakeRepository(Op("weather", formula: null, system: true));
+
+        var saved = await Service(repository).UpdateAsync("weather", Same(repository.Rows[0]) with { Name = "Forecast" });
+
+        Assert.Equal("Forecast", saved.Name);
+        Assert.Null(saved.Formula);
+    }
+
+    public static TheoryData<string?, OperationInput, string> SystemLogicChanges => new()
+    {
+        { "A / B", Same(Op("divide", "A / B", system: true)) with { Formula = "A * B" }, "formula" },
+        { null, Same(Op("weather", null, system: true)) with { Formula = "A + B" }, "formula" },
+        { "A / B", Same(Op("divide", "A / B", system: true)) with { Kind = OperationKind.Other }, "kind" },
+        { "A / B", Same(Op("divide", "A / B", system: true)) with { InputType = InputType.Text }, "inputType" },
+    };
+
+    [Theory]
+    [MemberData(nameof(SystemLogicChanges))]
+    public async Task R4_AC6_changing_the_logic_of_a_system_operation_is_rejected(string? formula, OperationInput change, string field)
+    {
+        var original = Op(change.Id!, formula, system: true);
+        var repository = new FakeRepository(original);
+
+        var error = await Assert.ThrowsAsync<ValidationException>(() => Service(repository).UpdateAsync(original.Id, change));
+
+        Assert.Equal(ErrorCodes.SystemLogicReadonly, error.Code);
+        Assert.Equal(field, error.Field);
+        Assert.Same(original, repository.Rows[0]);
+    }
+
+    [Fact]
+    public async Task R4_AC2_a_custom_operation_can_change_its_formula_kind_and_input_type()
+    {
+        var repository = new FakeRepository(Op("avg", "(A + B) / 2"));
+
+        var saved = await Service(repository).UpdateAsync("avg",
+            Same(repository.Rows[0]) with { Formula = "concat(A, B)", Kind = OperationKind.String, InputType = InputType.Text });
+
+        Assert.Equal("concat(A, B)", saved.Formula);
+        Assert.Equal(OperationKind.String, saved.Kind);
+        Assert.Equal(InputType.Text, saved.InputType);
+        Assert.False(saved.IsSystem);
+    }
+
+    [Fact]
+    public async Task R4_AC4_an_update_with_a_bad_formula_is_rejected_and_nothing_changes()
+    {
+        var original = Op("avg", "(A + B) / 2");
+        var repository = new FakeRepository(original);
+
+        var error = await Assert.ThrowsAsync<ValidationException>(() =>
+            Service(repository).UpdateAsync("avg", Same(original) with { Formula = "A +" }));
+
+        Assert.Equal(ErrorCodes.FormulaInvalid, error.Code);
+        Assert.Same(original, repository.Rows[0]);
+    }
+
+    [Theory]
+    [InlineData("nope")]
+    [InlineData("gone")]
+    public async Task R4_AC3_updating_an_unknown_or_deleted_operation_is_not_found(string id)
+    {
+        var repository = new FakeRepository(Op("gone", deleted: true));
+
+        await Assert.ThrowsAsync<NotFoundException>(() => Service(repository).UpdateAsync(id, Input(id: id, version: V1)));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("not base64!")]
+    public async Task R4_AC7_an_update_needs_the_version_it_was_based_on(string? version)
+    {
+        var repository = new FakeRepository(Op("avg"));
+
+        var error = await Assert.ThrowsAsync<ValidationException>(() =>
+            Service(repository).UpdateAsync("avg", Same(repository.Rows[0]) with { Version = version }));
+
+        Assert.Equal("version", error.Field);
+    }
+
+    [Fact]
+    public async Task R4_AC7_an_update_based_on_an_old_version_is_an_edit_conflict()
+    {
+        var repository = new FakeRepository(Op("avg"));
+        var service = Service(repository);
+        await service.UpdateAsync("avg", Same(repository.Rows[0], V1) with { Name = "First" });
+
+        var error = await Assert.ThrowsAsync<ConflictException>(() =>
+            service.UpdateAsync("avg", Same(repository.Rows[0], V1) with { Name = "Second" }));
+
+        Assert.Equal(ErrorCodes.EditConflict, error.Code);
+        Assert.Equal("First", repository.Rows[0].Name);
+    }
+
+    [Fact]
+    public async Task T29_the_id_in_the_body_must_match_the_operation_being_changed()
+    {
+        var repository = new FakeRepository(Op("avg"));
+
+        var error = await Assert.ThrowsAsync<ValidationException>(() =>
+            Service(repository).UpdateAsync("avg", Same(repository.Rows[0]) with { Id = "other" }));
+
+        Assert.Equal("id", error.Field);
+    }
+
+    [Fact]
+    public async Task R4_AC6_deleting_a_system_operation_is_rejected()
+    {
+        var repository = new FakeRepository(Op("divide", "A / B", system: true));
+
+        var error = await Assert.ThrowsAsync<ValidationException>(() => Service(repository).DeleteAsync("divide"));
+
+        Assert.Equal(ErrorCodes.SystemCannotDelete, error.Code);
+        Assert.False(repository.Rows[0].IsDeleted);
+    }
+
+    [Fact]
+    public async Task R4_AC3_deleting_a_custom_operation_hides_it_but_keeps_the_row()
+    {
+        var repository = new FakeRepository(Op("avg"));
+
+        await Service(repository).DeleteAsync("avg");
+
+        var row = Assert.Single(repository.Rows);
+        Assert.True(row.IsDeleted);
+        Assert.Equal(Now, row.UpdatedAtUtc);
+    }
+
+    [Theory]
+    [InlineData("nope")]
+    [InlineData("gone")]
+    public async Task R4_AC3_deleting_an_unknown_or_already_deleted_operation_is_not_found(string id)
+    {
+        var repository = new FakeRepository(Op("gone", deleted: true));
+
+        await Assert.ThrowsAsync<NotFoundException>(() => Service(repository).DeleteAsync(id));
+    }
+
+    [Fact]
+    public async Task T29_the_management_list_includes_disabled_operations()
+    {
+        var repository = new FakeRepository(Op("on"), Op("off", enabled: false), Op("gone", deleted: true));
+
+        var ids = (await Service(repository).ListAllAsync()).Select(o => o.Id);
+
+        Assert.Equal(["on", "off"], ids);
+    }
+
     internal static OperationDefinition Op(string id, string? formula = "A + B", bool system = false, bool deleted = false,
         bool enabled = true) => new()
     {
