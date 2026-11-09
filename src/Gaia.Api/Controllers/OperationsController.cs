@@ -26,6 +26,23 @@ public class OperationsController(OperationService operations, CatalogService ca
         return Created($"/api/operations/{created.Id}", created);
     }
 
+    /// <summary>
+    /// Changes operation {id}. Send back the "version" you loaded: if someone else saved in between,
+    /// the change is rejected with 409 edit_conflict instead of overwriting theirs (R4.AC7).
+    /// Built-in operations can be renamed, relabelled and disabled, but their logic can't change (R4.AC6).
+    /// </summary>
+    /// <response code="200">The saved operation with its new "version".</response>
+    /// <response code="400">validation_error / formula_invalid / system_logic_readonly.</response>
+    /// <response code="404">operation_not_found.</response>
+    /// <response code="409">edit_conflict — reload the operation and apply your change again.</response>
+    [HttpPut("{id}")]
+    [ProducesResponseType<OperationDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    public async Task<OperationDto> Update(string id, OperationUpsertDto request, CancellationToken cancellationToken) =>
+        OperationDto.From(await catalog.UpdateAsync(id, request.ToInput(), cancellationToken));
+
     /// <summary>Lists the operations users can run (enabled, not deleted), ordered by name.</summary>
     [HttpGet]
     public async Task<IEnumerable<OperationDto>> List(CancellationToken cancellationToken) =>

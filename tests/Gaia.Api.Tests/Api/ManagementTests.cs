@@ -87,6 +87,100 @@ public class ManagementTests(GaiaApiFactory factory) : IClassFixture<GaiaApiFact
         Assert.Equal("duplicate_id", await CodeOf(response));
     }
 
+    // --- PUT (T31) ---
+
+    private static object Change(JsonElement loaded, string? formula = null, string? name = null) => new
+    {
+        id = loaded.GetProperty("id").GetString(),
+        name = name ?? loaded.GetProperty("name").GetString(),
+        kind = loaded.GetProperty("kind").GetString(),
+        fieldALabel = loaded.GetProperty("fieldALabel").GetString(),
+        fieldBLabel = loaded.GetProperty("fieldBLabel").GetString(),
+        inputType = loaded.GetProperty("inputType").GetString(),
+        formula = formula ?? loaded.GetProperty("formula").GetString(),
+        isEnabled = loaded.GetProperty("isEnabled").GetBoolean(),
+        version = loaded.GetProperty("version").GetString(),
+    };
+
+    private async Task<JsonElement> LoadAsync(string id) =>
+        (await _client.GetFromJsonAsync<JsonElement[]>("/api/operations?includeDisabled=true"))!
+        .Single(o => o.GetProperty("id").GetString() == id);
+
+    [Fact]
+    public async Task R4_AC2_a_changed_formula_is_used_by_the_next_execute()
+    {
+        var id = NewId("mean");
+        var loaded = await CreateAsync(id);
+
+        var response = await _client.PutAsJsonAsync($"/api/operations/{id}", Change(loaded, formula: "A * B"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("24", await ExecuteAsync(id, "4", "6"));
+    }
+
+    [Theory]
+    [InlineData("divide", "A * B")]
+    [InlineData("weather", "A + B")]
+    public async Task R4_AC6_changing_a_system_formula_is_400_system_logic_readonly(string id, string formula)
+    {
+        var loaded = await LoadAsync(id);
+
+        var response = await _client.PutAsJsonAsync($"/api/operations/{id}", Change(loaded, formula: formula));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("system_logic_readonly", await CodeOf(response));
+    }
+
+    [Fact]
+    public async Task R4_AC6_a_system_operation_can_be_renamed()
+    {
+        var loaded = await LoadAsync("multiply");
+
+        var response = await _client.PutAsJsonAsync("/api/operations/multiply", Change(loaded, name: "Times"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Times", (await LoadAsync("multiply")).GetProperty("name").GetString());
+        Assert.Equal("12", await ExecuteAsync("multiply", "3", "4"));
+    }
+
+    [Fact]
+    public async Task R4_AC7_two_saves_from_the_same_version_200_then_409_and_the_first_values_are_kept()
+    {
+        var id = NewId("race");
+        var loaded = await CreateAsync(id);
+
+        var first = await _client.PutAsJsonAsync($"/api/operations/{id}", Change(loaded, name: "First"));
+        var second = await _client.PutAsJsonAsync($"/api/operations/{id}", Change(loaded, name: "Second"));
+
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
+        Assert.Equal("edit_conflict", await CodeOf(second));
+        Assert.Equal("First", (await LoadAsync(id)).GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public async Task R4_AC7_a_save_based_on_the_fresh_version_succeeds()
+    {
+        var id = NewId("fresh");
+        var loaded = await CreateAsync(id);
+        var first = await _client.PutAsJsonAsync($"/api/operations/{id}", Change(loaded, name: "First"));
+        var fresh = await first.Content.ReadFromJsonAsync<JsonElement>();
+
+        var second = await _client.PutAsJsonAsync($"/api/operations/{id}", Change(fresh, name: "Second"));
+
+        Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+        Assert.Equal("Second", (await LoadAsync(id)).GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public async Task T31_PUT_on_an_unknown_id_is_404()
+    {
+        var response = await _client.PutAsJsonAsync("/api/operations/no-such-op", Definition("no-such-op"));
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("operation_not_found", await CodeOf(response));
+    }
+
     [Fact]
     public async Task R4_AC4_an_unknown_kind_is_400_naming_the_field()
     {
