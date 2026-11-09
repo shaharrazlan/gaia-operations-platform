@@ -30,16 +30,16 @@ public sealed class FormulaParser
     public static Node Parse(string formula)
     {
         if (string.IsNullOrWhiteSpace(formula))
-            throw Tokenizer.Error("The formula is empty.");
+            throw FormulaErrors.Invalid("The formula is empty.");
         if (formula.Length > MaxLength)
-            throw Tokenizer.Error($"The formula is longer than {MaxLength} characters.");
+            throw FormulaErrors.Invalid($"The formula is longer than {MaxLength} characters.");
 
         var parser = new FormulaParser(Tokenizer.Tokenize(formula));
         var tree = parser.ParseComparison();
 
         var extra = parser.Current;
         if (extra.Kind != TokenKind.End)
-            throw Tokenizer.Error($"Unexpected '{extra.Text}' at position {extra.Position}.");
+            throw FormulaErrors.Invalid($"Unexpected '{extra.Text}' at position {extra.Position}.");
         return tree;
     }
 
@@ -118,7 +118,7 @@ public sealed class FormulaParser
                 Advance();
                 var number = double.Parse(token.Text, CultureInfo.InvariantCulture);
                 if (!double.IsFinite(number))
-                    throw Tokenizer.Error($"The number at position {token.Position} is too large.");
+                    throw FormulaErrors.Invalid($"The number at position {token.Position} is too large.");
                 return new NumberNode(number, token.Position);
 
             case TokenKind.Text:
@@ -139,10 +139,10 @@ public sealed class FormulaParser
                 return new VariableNode(token.Text, token.Position);
 
             case TokenKind.Identifier:
-                throw Tokenizer.Error($"Unknown name '{token.Text}' at position {token.Position}. Use A or B.");
+                throw FormulaErrors.Invalid($"Unknown name '{token.Text}' at position {token.Position}. Use A or B.");
 
             default:
-                throw Tokenizer.Error($"Expected a value at position {token.Position} but {Describe(token)}.");
+                throw FormulaErrors.Invalid($"Expected a value at position {token.Position} but {Describe(token)}.");
         }
     }
 
@@ -168,7 +168,7 @@ public sealed class FormulaParser
     private void Expect(TokenKind kind, string description)
     {
         if (!At(kind))
-            throw Tokenizer.Error($"Expected {description} at position {Current.Position} but {Describe(Current)}.");
+            throw FormulaErrors.Invalid($"Expected {description} at position {Current.Position} but {Describe(Current)}.");
         Advance();
     }
 
@@ -179,7 +179,7 @@ public sealed class FormulaParser
     private void Enter()
     {
         if (++_depth > MaxDepth)
-            throw Tokenizer.Error($"The formula is nested too deeply (more than {MaxDepth} levels).");
+            throw FormulaErrors.Invalid($"The formula is nested too deeply (more than {MaxDepth} levels).");
     }
 
     private void Leave() => _depth--;

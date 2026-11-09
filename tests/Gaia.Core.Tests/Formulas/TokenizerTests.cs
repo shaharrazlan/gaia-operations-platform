@@ -66,6 +66,15 @@ public class TokenizerTests
     }
 
     [Fact]
+    public void T9_a_doubled_quote_inside_text_is_one_quote()
+    {
+        var token = Tokenizer.Tokenize("\"say \"\"hi\"\"\"")[0];
+
+        Assert.Equal(TokenKind.Text, token.Kind);
+        Assert.Equal("say \"hi\"", token.Text);
+    }
+
+    [Fact]
     public void T9_single_equals_sign_is_rejected_with_a_hint()
     {
         var error = Assert.Throws<ValidationException>(() => Tokenizer.Tokenize("A = B"));

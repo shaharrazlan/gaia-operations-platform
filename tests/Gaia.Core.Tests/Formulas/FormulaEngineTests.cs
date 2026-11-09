@@ -29,9 +29,22 @@ public class FormulaEngineTests
     [InlineData("-A", "0", "1", "0")]               // never "-0"
     [InlineData("A / B", "1", "3", "0.333333333333333")]
     [InlineData("A > B", "2", "1", "true")]
+    [InlineData("A ^ B", "10", "20", "100000000000000000000")]   // never "1E+20"
+    [InlineData("A / B", "1", "10000000", "0.0000001")]         // never "1E-07"
     public void T14_results_are_formatted_cleanly(string formula, string a, string b, string expected)
     {
         Assert.Equal(expected, FormulaEngine.Evaluate(formula, InputType.Number, a, b));
+    }
+
+    [Theory]
+    [InlineData("A ^ B", "10", "20")]
+    [InlineData("A / B", "1", "3")]
+    [InlineData("A / B", "1", "10000000")]
+    public void T14_every_numeric_result_is_a_valid_numeric_input(string formula, string a, string b)
+    {
+        var result = FormulaEngine.Evaluate(formula, InputType.Number, a, b);
+
+        FormulaEngine.Evaluate("A + B", InputType.Number, result, "0"); // must not throw
     }
 
     [Fact]

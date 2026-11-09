@@ -72,61 +72,63 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 ## S2 · Formula engine + error types   (Must) · ~2.5 h
 
-- [ ] **T8 · Error types**
+- [x] **T8 · Error types**
   - Covers: R2.AC6 (codes) · Step S2
   - Files: `src/Gaia.Core/Errors/*.cs` (`GaiaException` base with `Code`, `Field`; `ValidationException`, `NotFoundException`, `DomainException`, `ExternalServiceException`, `ConflictException`)
   - Tests: unit "T8: each exception type carries its error code"
   - Depends on: T4
   - Done when: `UNIT` green.
-  - Commit: —
+  - Commit: 38aa0df
 
-- [ ] **T9 · Tokenizer** [P]
+- [x] **T9 · Tokenizer** [P]
   - Covers: R4.AC4 (positions) · Step S2
   - Files: `src/Gaia.Core/Formulas/Token.cs`, `Tokenizer.cs`, `tests/Gaia.Core.Tests/Formulas/TokenizerTests.cs`
   - Tests: unit "T9: tokenizes numbers, strings, A/B, operators, parentheses, commas with positions"; unit "R4.AC4: unexpected character '#' reports its position"; unit "R4.AC4: unterminated string reports its position"
   - Depends on: T8
   - Done when: `UNIT` green.
-  - Commit: —
+  - Commit: e2c0d56
 
-- [ ] **T10 · Input parser** [P]
+- [x] **T10 · Input parser** [P]
   - Covers: R2.AC4, R3.AC5 · Step S2
   - Files: `src/Gaia.Core/Operations/InputType.cs`, `InputParser.cs`, `tests/…/InputParserTests.cs`
   - Tests: unit "R3.AC5: parses '-2.5' and '10' as numbers"; unit "R3.AC5: rejects '3,5', '1e3' and 'abc'"; unit "R2.AC4: rejects latitude 95 and longitude -181 with field name"; unit "R2.AC4: Text input accepts any string"
   - Depends on: T8
   - Done when: `UNIT` green.
-  - Commit: —
+  - Commit: a154dd8
+  - Note: also created `Formulas/Value.cs` (planned for T12) because the parser returns typed values. Review fix: `[0-9]` instead of `\d` (Unicode digits).
 
-- [ ] **T11 · Parser (AST)**
+- [x] **T11 · Parser (AST)**
   - Covers: R4.AC4, NFR6 · Step S2
   - Files: `src/Gaia.Core/Formulas/Ast.cs`, `FormulaParser.cs`, `tests/…/FormulaParserTests.cs`
   - Tests: unit "T11: precedence — 1 + 2 * 3 ^ 2 parses as 1 + (2 * (3 ^ 2))"; unit "T11: ^ is right-associative"; unit "T11: unary minus"; unit "R4.AC4: missing ')' reports position"; unit "R4.AC4: unknown identifier 'C' is an error"; unit "NFR6: 'File.Delete(\"x\")' is a parse error"; unit "NFR6: nesting deeper than 50 is rejected"; unit "NFR6: formula over 500 chars is rejected"
   - Depends on: T9
   - Done when: `UNIT` green.
-  - Commit: —
+  - Commit: 722b6ba
+  - Note: review fix — numeric literals too large for a double are rejected at save time.
 
-- [ ] **T12 · Evaluator (operators)**
+- [x] **T12 · Evaluator (operators)**
   - Covers: R2.AC5 · Step S2
   - Files: `src/Gaia.Core/Formulas/Value.cs`, `Evaluator.cs`, `tests/…/EvaluatorTests.cs`
   - Tests: unit "T12: arithmetic and comparison operators"; unit "T12: + concatenates two texts"; unit "R2.AC5: division by zero is a domain error"; unit "R2.AC5: modulo by zero is a domain error"; unit "R2.AC5: NaN or infinite result is a domain error"; unit "R2.AC5: number + text is a type (domain) error"
   - Depends on: T11
   - Done when: `UNIT` green.
-  - Commit: —
+  - Commit: c869ce6
 
-- [ ] **T13 · Function whitelist**
+- [x] **T13 · Function whitelist**
   - Covers: R3.AC2, NFR6 · Step S2
   - Files: `src/Gaia.Core/Formulas/Functions.cs`, `tests/…/FunctionsTests.cs`
   - Tests: unit "R3.AC2: concat('foo','bar') = 'foobar'"; unit "R3.AC2: count('banana','an') = 2"; unit "T13: sqrt abs round min max floor ceil upper lower len trim replace contains if"; unit "NFR6: unknown function 'exec' is rejected at parse time"; unit "T13: wrong arity is rejected at parse time"; unit "R2.AC5: sqrt(-1) is a domain error"
   - Depends on: T12
   - Done when: `UNIT` green.
-  - Commit: —
+  - Note: also created `Formulas/ResultFormatter.cs` (planned for T14) because `concat` formats numbers; modified `FormulaParser` (name/arity check) and `Evaluator` (calls, lazy `if`). Review fix: every produced text is capped at 1000 chars (= stored result size) so nested `replace` can't exhaust memory.
 
-- [ ] **T14 · FormulaEngine facade**
+- [x] **T14 · FormulaEngine facade**
   - Covers: R3.AC1 · Step S2
   - Files: `src/Gaia.Core/Formulas/FormulaEngine.cs`, `ResultFormatter.cs`, `tests/…/FormulaEngineTests.cs`
   - Tests: unit "R3.AC1: with A=7, B=2 the seeded formulas give add 9, subtract 5, multiply 14, divide 3.5, power 49"; unit "T14: 0.1 + 0.2 formats as 0.3"; unit "T14: Validate returns error with position for a bad formula"
   - Depends on: T10, T13
   - Done when: `UNIT` green.
-  - Commit: —
+  - Commit: 37b0c9c
 
 ## S3 · Data layer   (Must) · ~0.75 h
 

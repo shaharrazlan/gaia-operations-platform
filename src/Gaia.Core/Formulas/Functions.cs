@@ -1,3 +1,4 @@
+using System.Globalization;
 using Gaia.Core.Errors;
 
 namespace Gaia.Core.Formulas;
@@ -8,7 +9,8 @@ namespace Gaia.Core.Formulas;
 /// </summary>
 public static class Functions
 {
-    private sealed record Definition(int MinArgs, int MaxArgs, Func<IReadOnlyList<Value>, string, Value> Invoke);
+    /// <summary>Invoke is null for a special form the Evaluator runs itself (only "if").</summary>
+    private sealed record Definition(int MinArgs, int MaxArgs, Func<IReadOnlyList<Value>, string, Value>? Invoke);
 
     private static readonly Dictionary<string, Definition> All = new(StringComparer.Ordinal)
     {
@@ -25,15 +27,16 @@ public static class Functions
         ["upper"] = new(1, 1, (args, fn) => Evaluator.Text(Text(args, 0, fn).ToUpperInvariant())),
         ["lower"] = new(1, 1, (args, fn) => Evaluator.Text(Text(args, 0, fn).ToLowerInvariant())),
         ["trim"] = new(1, 1, (args, fn) => Evaluator.Text(Text(args, 0, fn).Trim())),
-        ["len"] = new(1, 1, (args, fn) => new NumberValue(Text(args, 0, fn).Length)),
+        // Counts what a person sees as characters (an emoji or a letter with accents = 1), not UTF-16 units.
+        ["len"] = new(1, 1, (args, fn) => new NumberValue(new StringInfo(Text(args, 0, fn)).LengthInTextElements)),
         ["concat"] = new(1, 10, (args, _) => Evaluator.Text(string.Concat(args.Select(ResultFormatter.Format)))),
         ["contains"] = new(2, 2, (args, fn) => new BoolValue(Text(args, 0, fn).Contains(Text(args, 1, fn), StringComparison.Ordinal))),
         ["count"] = new(2, 2, Count),
         ["replace"] = new(3, 3, Replace),
 
-        // "if" is evaluated lazily by the Evaluator (only the chosen branch runs);
-        // it is listed here so the parser knows its name and argument count.
-        ["if"] = new(3, 3, (_, _) => throw new InvalidOperationException("'if' is evaluated by the Evaluator.")),
+        // Special form: the Evaluator runs it lazily (only the chosen branch). Listed so the parser
+        // knows its name and argument count.
+        ["if"] = new(3, 3, null),
     };
 
     public static IReadOnlyCollection<string> Names => All.Keys;
@@ -42,18 +45,21 @@ public static class Functions
     internal static void CheckCall(string name, int argumentCount, int position)
     {
         if (!All.TryGetValue(name, out var definition))
-            throw Tokenizer.Error($"Unknown function '{name}' at position {position}. Available: {string.Join(", ", All.Keys)}.");
+            throw FormulaErrors.Invalid($"Unknown function '{name}' at position {position}. Available: {string.Join(", ", All.Keys)}.");
 
         if (argumentCount < definition.MinArgs || argumentCount > definition.MaxArgs)
         {
             var expected = definition.MinArgs == definition.MaxArgs
                 ? $"{definition.MinArgs}"
                 : $"{definition.MinArgs} to {definition.MaxArgs}";
-            throw Tokenizer.Error($"Function '{name}' at position {position} expects {expected} argument(s) but got {argumentCount}.");
+            throw FormulaErrors.Invalid($"Function '{name}' at position {position} expects {expected} argument(s) but got {argumentCount}.");
         }
     }
 
-    internal static Value Invoke(string name, IReadOnlyList<Value> arguments) => All[name].Invoke(arguments, name);
+    internal static Value Invoke(string name, IReadOnlyList<Value> arguments) =>
+        All[name].Invoke is { } invoke
+            ? invoke(arguments, name)
+            : throw new InvalidOperationException($"'{name}' is a special form evaluated by the Evaluator.");
 
     private static Value Round(IReadOnlyList<Value> args, string fn)
     {

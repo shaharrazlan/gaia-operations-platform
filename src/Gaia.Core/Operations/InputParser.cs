@@ -18,7 +18,8 @@ public static partial class InputParser
 
     private static Value ParseOne(InputType type, string? raw, string field, string label)
     {
-        if (string.IsNullOrEmpty(raw))
+        // Text may be spaces (they can matter in text operations); for numbers, spaces only = missing.
+        if (string.IsNullOrEmpty(raw) || (type != InputType.Text && string.IsNullOrWhiteSpace(raw)))
             throw new ValidationException($"{label} is required.", field);
         if (raw.Length > MaxLength)
             throw new ValidationException($"{label} is longer than {MaxLength} characters.", field);

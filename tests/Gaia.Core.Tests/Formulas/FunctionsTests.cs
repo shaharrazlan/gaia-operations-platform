@@ -65,6 +65,7 @@ public class FunctionsTests
     public void T13_len_and_contains()
     {
         Assert.Equal(new NumberValue(5), Text("len(A)", "hello", ""));
+        Assert.Equal(new NumberValue(2), Text("len(A)", "a\U0001F600", ""));   // emoji counts as 1
         Assert.Equal(new BoolValue(true), Text("contains(A, B)", "hello", "ell"));
     }
 

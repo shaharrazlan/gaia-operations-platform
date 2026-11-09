@@ -1,4 +1,4 @@
-using Gaia.Core.Errors;
+using System.Text;
 
 namespace Gaia.Core.Formulas;
 
@@ -42,10 +42,27 @@ public static class Tokenizer
             }
             else if (c == '"')
             {
-                var end = formula.IndexOf('"', i + 1);
-                if (end < 0) throw Error($"Unterminated text starting at position {position}.");
-                tokens.Add(new Token(TokenKind.Text, formula[(i + 1)..end], position));
-                i = end + 1;
+                // Text literal. A quote inside the text is written twice: "say ""hi""" → say "hi"
+                var text = new StringBuilder();
+                i++;
+                while (true)
+                {
+                    if (i >= formula.Length)
+                        throw FormulaErrors.Invalid($"Unterminated text starting at position {position}.");
+                    if (formula[i] == '"')
+                    {
+                        if (i + 1 < formula.Length && formula[i + 1] == '"')
+                        {
+                            text.Append('"');
+                            i += 2;
+                            continue;
+                        }
+                        i++;
+                        break;
+                    }
+                    text.Append(formula[i++]);
+                }
+                tokens.Add(new Token(TokenKind.Text, text.ToString(), position));
             }
             else
             {
@@ -69,8 +86,8 @@ public static class Tokenizer
                         '(' => (TokenKind.LeftParen, 1),
                         ')' => (TokenKind.RightParen, 1),
                         ',' => (TokenKind.Comma, 1),
-                        '=' => throw Error($"Unexpected '=' at position {position}. Use '==' to compare."),
-                        _ => throw Error($"Unexpected character '{c}' at position {position}."),
+                        '=' => throw FormulaErrors.Invalid($"Unexpected '=' at position {position}. Use '==' to compare."),
+                        _ => throw FormulaErrors.Invalid($"Unexpected character '{c}' at position {position}."),
                     },
                 };
                 tokens.Add(new Token(kind, formula.Substring(i, length), position));
@@ -81,7 +98,4 @@ public static class Tokenizer
         tokens.Add(new Token(TokenKind.End, "", formula.Length + 1));
         return tokens;
     }
-
-    internal static ValidationException Error(string message) =>
-        new(message, "formula", ErrorCodes.FormulaInvalid);
 }

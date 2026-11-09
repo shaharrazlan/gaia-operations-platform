@@ -73,6 +73,7 @@ public class InputParserTests
     [InlineData(null, "1", "fieldA")]
     [InlineData("", "1", "fieldA")]
     [InlineData("1", null, "fieldB")]
+    [InlineData("1", "   ", "fieldB")]
     public void R2_AC3_missing_field_is_a_validation_error_naming_the_field(string? a, string? b, string field)
     {
         var error = Assert.Throws<ValidationException>(() => InputParser.Parse(InputType.Number, a, b));
