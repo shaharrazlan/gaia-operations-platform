@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Gaia.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(GaiaDbContext))]
-    [Migration("20261109211049_Initial")]
+    [Migration("20261109211401_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -29,7 +29,8 @@ namespace Gaia.Infrastructure.Data.Migrations
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(50)")
+                        .UseCollation("Latin1_General_100_BIN2");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -83,7 +84,12 @@ namespace Gaia.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Operations", (string)null);
+                    b.ToTable("Operations", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Operations_InputType", "[InputType] IN ('Number', 'Text', 'Coordinate')");
+
+                            t.HasCheckConstraint("CK_Operations_Kind", "[Kind] IN ('Arithmetic', 'String', 'Other')");
+                        });
 
                     b.HasData(
                         new

@@ -47,6 +47,17 @@ npm --prefix client run dev
 | E2E (Playwright) | `npm --prefix client run e2e` (first time: `npx --prefix client playwright install chromium`) |
 | All | `powershell -ExecutionPolicy Bypass -File scripts/test-all.ps1` |
 
+## Database
+
+The API creates and updates its own database on startup (Development and E2E environments), so no database commands are needed to run it. Default: LocalDB database `GaiaDev`; change `ConnectionStrings:Gaia` to use SQL Server Express/Developer instead.
+
+To create a new migration (developers only):
+
+```powershell
+dotnet tool restore
+dotnet ef migrations add <Name> --project src/Gaia.Infrastructure --output-dir Data/Migrations
+```
+
 ## API _(coming)_
 
 ## Formula language _(coming)_

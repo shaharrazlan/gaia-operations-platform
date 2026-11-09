@@ -9,10 +9,16 @@ public class OperationEntityConfig : IEntityTypeConfiguration<OperationDefinitio
 {
     public void Configure(EntityTypeBuilder<OperationDefinition> entity)
     {
-        entity.ToTable("Operations");
+        entity.ToTable("Operations", table =>
+        {
+            // The database itself refuses values the code can't read back.
+            table.HasCheckConstraint("CK_Operations_Kind", InList("Kind", Enum.GetNames<OperationKind>()));
+            table.HasCheckConstraint("CK_Operations_InputType", InList("InputType", Enum.GetNames<InputType>()));
+        });
         entity.HasKey(o => o.Id);
 
-        entity.Property(o => o.Id).HasMaxLength(50);
+        // Binary collation: ids are case-sensitive, so "ADD" is not "add" (SQL Server's default is case-insensitive).
+        entity.Property(o => o.Id).HasMaxLength(50).UseCollation("Latin1_General_100_BIN2");
         entity.Property(o => o.Name).HasMaxLength(100);
         entity.Property(o => o.FieldALabel).HasMaxLength(50);
         entity.Property(o => o.FieldBLabel).HasMaxLength(50);
@@ -27,6 +33,9 @@ public class OperationEntityConfig : IEntityTypeConfiguration<OperationDefinitio
 
         entity.Ignore(o => o.IsAvailable);
 
-        entity.HasData(SeedOperations.All);
+        entity.HasData(SeedOperations.Create());
     }
+
+    private static string InList(string column, IEnumerable<string> values) =>
+        $"[{column}] IN ({string.Join(", ", values.Select(v => $"'{v}'"))})";
 }

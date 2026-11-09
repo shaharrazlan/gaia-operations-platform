@@ -132,30 +132,31 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 ## S3 · Data layer   (Must) · ~0.75 h
 
-- [ ] **T15 · DbContext and Operation entity**
+- [x] **T15 · DbContext and Operation entity**
   - Covers: foundation for R1/R4 · Step S3
   - Files: `src/Gaia.Core/Operations/OperationDefinition.cs`, `src/Gaia.Infrastructure/Data/GaiaDbContext.cs`, `Data/OperationEntityConfig.cs` (incl. `Version` rowversion, `IsSystem`)
   - Tests: `dotnet build` + `UNIT` green
   - Depends on: T14
   - Done when: builds.
-  - Commit: —
+  - Commit: 5c52f35
+  - Note: pinned `System.Security.Cryptography.Pkcs` 10.0.14 (transitive 9.0.11 from SqlClient has GHSA-2fmv-rv2c-59x7 / GHSA-846f-f764-76mx); added `SeedOperations.cs` and `DesignTimeDbContextFactory.cs` (Infrastructure/Data, S3-owned). S3 review: UTC converter, case-sensitive id collation, enum check constraints, seed as factory method; Initial migration regenerated (not yet shipped).
 
-- [ ] **T16 · Initial migration with seed**
+- [x] **T16 · Initial migration with seed**
   - Covers: R3.AC1–3 data · Step S3
   - Files: `src/Gaia.Infrastructure/Data/Migrations/*Initial*`
   - Tests: integration "T16: migrated database contains the 10 seeded operations with correct IsSystem flags"
   - Also: `GaiaApiFactory` migrates its database on start and **drops it on dispose** (S1 review finding)
   - Depends on: T15
   - Done when: `INT` green.
-  - Commit: —
+  - Commit: 1efbf19
 
-- [ ] **T17 · Operation repository**
+- [x] **T17 · Operation repository**
   - Covers: R1.AC2 (data) · Step S3
   - Files: `src/Gaia.Core/Operations/IOperationRepository.cs`, `src/Gaia.Infrastructure/Data/EfOperationRepository.cs`
   - Tests: integration "T17: GetEnabled excludes disabled and deleted"; integration "T17: GetById returns null for unknown id"
   - Depends on: T16
   - Done when: `INT` green.
-  - Commit: —
+  - Commit: 8b5de35
 
 ## S4 · Catalog + execute API, weather   (Must) · ~2 h
 

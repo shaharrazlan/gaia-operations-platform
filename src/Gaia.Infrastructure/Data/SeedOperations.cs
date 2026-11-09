@@ -12,7 +12,8 @@ public static class SeedOperations
     // Fixed so the migration is deterministic (HasData needs constant values).
     private static readonly DateTime Seeded = new(2026, 11, 9, 0, 0, 0, DateTimeKind.Utc);
 
-    public static readonly OperationDefinition[] All =
+    /// <summary>Builds new objects on every call, so no caller can change the seed seen by others.</summary>
+    public static OperationDefinition[] Create() =>
     [
         System("add", "Add", OperationKind.Arithmetic, "First number", "Second number", InputType.Number, "A + B"),
         System("subtract", "Subtract", OperationKind.Arithmetic, "First number", "Second number", InputType.Number, "A - B"),

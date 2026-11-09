@@ -1,5 +1,6 @@
 using Gaia.Core.Operations;
 using Gaia.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Gaia.Api.Tests.Data;
 
@@ -49,6 +50,33 @@ public class EfOperationRepositoryTests(GaiaApiFactory factory) : IClassFixture<
         await using var db = factory.CreateDbContext();
 
         Assert.Null(await new EfOperationRepository(db).FindAsync("no-such-operation"));
+    }
+
+    [Fact]
+    public async Task T17_Find_is_case_sensitive()
+    {
+        await using var db = factory.CreateDbContext();
+
+        Assert.Null(await new EfOperationRepository(db).FindAsync("ADD"));
+    }
+
+    [Fact]
+    public async Task T17_timestamps_are_read_back_as_UTC()
+    {
+        await using var db = factory.CreateDbContext();
+
+        var add = await new EfOperationRepository(db).FindAsync("add");
+
+        Assert.Equal(DateTimeKind.Utc, add!.CreatedAtUtc.Kind);
+    }
+
+    [Fact]
+    public async Task T17_database_rejects_an_unknown_kind_value()
+    {
+        await using var db = factory.CreateDbContext();
+
+        await Assert.ThrowsAnyAsync<Exception>(() => db.Database.ExecuteSqlRawAsync(
+            "UPDATE Operations SET Kind = 'Arithmatic' WHERE Id = 'add'"));
     }
 
     [Fact]

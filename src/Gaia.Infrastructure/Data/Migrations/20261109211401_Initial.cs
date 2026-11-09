@@ -17,7 +17,7 @@ namespace Gaia.Infrastructure.Data.Migrations
                 name: "Operations",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Id = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, collation: "Latin1_General_100_BIN2"),
                     Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Kind = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     FieldALabel = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
@@ -34,6 +34,8 @@ namespace Gaia.Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Operations", x => x.Id);
+                    table.CheckConstraint("CK_Operations_InputType", "[InputType] IN ('Number', 'Text', 'Coordinate')");
+                    table.CheckConstraint("CK_Operations_Kind", "[Kind] IN ('Arithmetic', 'String', 'Other')");
                 });
 
             migrationBuilder.InsertData(
