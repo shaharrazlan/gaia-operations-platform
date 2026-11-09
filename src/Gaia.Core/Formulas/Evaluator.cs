@@ -18,7 +18,8 @@ public static class Evaluator
             ? new NumberValue(-x.Number)
             : throw new DomainException("'-' can only be applied to a number."),
         BinaryNode op => EvaluateBinary(op, a, b),
-        CallNode call => throw new NotSupportedException($"Function '{call.Name}' is not available yet."),
+        CallNode { Name: "if" } call => EvaluateIf(call, a, b),
+        CallNode call => Functions.Invoke(call.Name, call.Arguments.Select(arg => Evaluate(arg, a, b)).ToList()),
         _ => throw new InvalidOperationException($"Unknown node type {node.GetType().Name}."),
     };
 
@@ -30,7 +31,7 @@ public static class Evaluator
         return (op.Operator, left, right) switch
         {
             ("+", NumberValue x, NumberValue y) => Number(x.Number + y.Number),
-            ("+", TextValue x, TextValue y) => new TextValue(x.Text + y.Text),
+            ("+", TextValue x, TextValue y) => Text(x.Text + y.Text),
             ("-", NumberValue x, NumberValue y) => Number(x.Number - y.Number),
             ("*", NumberValue x, NumberValue y) => Number(x.Number * y.Number),
             ("/", NumberValue _, NumberValue { Number: 0 }) => throw new DomainException("Division by zero."),
@@ -49,11 +50,32 @@ public static class Evaluator
         };
     }
 
+    /// <summary>if(condition, then, else): only the chosen branch runs, so if(B == 0, 0, A / B) is safe.</summary>
+    private static Value EvaluateIf(CallNode call, Value a, Value b) =>
+        Evaluate(call.Arguments[0], a, b) switch
+        {
+            BoolValue { Bool: true } => Evaluate(call.Arguments[1], a, b),
+            BoolValue { Bool: false } => Evaluate(call.Arguments[2], a, b),
+            var other => throw new DomainException($"if: the condition must be true/false, not {Describe(other)}."),
+        };
+
     /// <summary>Every computed number goes through here, so NaN and ±∞ never escape as a "result".</summary>
     internal static NumberValue Number(double value) =>
         double.IsFinite(value)
             ? new NumberValue(value)
             : throw new DomainException("The result is not a finite number.");
+
+    /// <summary>
+    /// Longest text a formula may produce (also the size of the stored result).
+    /// Every built text goes through <see cref="Text"/>. Inputs are at most 200 characters and each
+    /// step's inputs are capped here, so nested replace/concat can't grow memory without bound (NFR6).
+    /// </summary>
+    public const int MaxTextLength = 1000;
+
+    internal static TextValue Text(string value) =>
+        value.Length <= MaxTextLength
+            ? new TextValue(value)
+            : throw new DomainException($"The text result is longer than {MaxTextLength} characters.");
 
     private static BoolValue Compare(string op, int comparison) => new(op switch
     {

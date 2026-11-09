@@ -161,6 +161,7 @@ public sealed class FormulaParser
             }
         }
         Expect(TokenKind.RightParen, "')'");
+        Functions.CheckCall(name.Text, arguments.Count, name.Position);
         return new CallNode(name.Text, arguments, name.Position);
     }
 
