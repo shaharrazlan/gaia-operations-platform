@@ -4,7 +4,7 @@
 **Plan:** [plan.md](plan.md) (approved 2026-11-09)
 
 **Commands** (from plan.md):
-`UNIT` = `dotnet test tests/Gaia.Core.Tests` · `INT` = `dotnet test tests/Gaia.Api.Tests` · `COMP` = `npm --prefix client test -- --run` · `E2E` = `npm --prefix client run e2e` · `ALL` = `pwsh scripts/test-all.ps1`
+`UNIT` = `dotnet test tests/Gaia.Core.Tests` · `INT` = `dotnet test tests/Gaia.Api.Tests` · `COMP` = `npm --prefix client test -- --run` · `E2E` = `npm --prefix client run e2e` · `ALL` = `powershell -ExecutionPolicy Bypass -File scripts/test-all.ps1`
 
 Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 → S9 → S10 → S11 → Review & verify.
 **[P]** = can run in parallel with the other [P] tasks of the same step.
@@ -22,53 +22,53 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Commit: — (no repo yet)
   - Note: installed .NET SDK 10.0.403, Node v26.13.0 (current LTS), Git 2.56, SQL Server 2022 **LocalDB** (MSI fetched with Microsoft's SSEI bootstrapper; the full Express winget package failed with 1009 when run silently). LocalDB is what the plan uses.
 
-- [ ] **T2 · Server solution skeleton** [P]
+- [x] **T2 · Server solution skeleton** [P]
   - Covers: foundation · Step S1
   - Files: `Gaia.sln`, `Directory.Build.props`, `.gitignore`, `src/Gaia.Core/`, `src/Gaia.Infrastructure/`, `src/Gaia.Api/` (empty `Program.cs` with `GET /health`)
   - Tests: `dotnet build` succeeds
   - Depends on: T1
   - Done when: `git init` done; solution builds; first commit.
-  - Commit: —
+  - Commit: 61050ec
 
-- [ ] **T3 · Client scaffold** [P]
+- [x] **T3 · Client scaffold** [P]
   - Covers: foundation · Step S1
   - Files: `client/` (Vite React JS; demo code removed), `client/vite.config.js` (proxy `/api` → API URL, Vitest + jsdom), `client/src/main.jsx`, `client/src/smoke.test.jsx`
   - Tests: component "T3: app renders" — `COMP` green
   - Depends on: T1
   - Done when: `COMP` green; `npm --prefix client run dev` serves a blank page.
-  - Commit: —
+  - Commit: 9ff4526
 
-- [ ] **T4 · Server test projects**
+- [x] **T4 · Server test projects**
   - Covers: foundation · Step S1
   - Files: `tests/Gaia.Core.Tests/`, `tests/Gaia.Api.Tests/` (`GaiaApiFactory` using a per-class LocalDB database `GaiaTests_<guid>`)
   - Tests: unit "T4: smoke"; integration "T4: GET /health returns 200"
   - Depends on: T2
   - Done when: `UNIT` and `INT` green.
-  - Commit: —
+  - Commit: 85e8fbb
 
-- [ ] **T5 · Playwright setup**
+- [x] **T5 · Playwright setup**
   - Covers: foundation · Step S1
   - Files: `client/playwright.config.js` (`webServer` starts API with `ASPNETCORE_ENVIRONMENT=E2E` + Vite), `client/e2e/smoke.spec.js`
   - Tests: e2e "T5: home page loads" — `E2E` green
   - Depends on: T3, T4
   - Done when: `E2E` green (Chromium installed via `npx playwright install chromium`).
-  - Commit: —
+  - Commit: cfb801c
 
-- [ ] **T6 · Dev scripts**
+- [x] **T6 · Dev scripts**
   - Covers: NFR3 · Step S1
   - Files: `scripts/run.ps1` (starts API + Vite, opens browser), `scripts/test-all.ps1` (runs UNIT, INT, COMP, E2E; non-zero exit on failure)
   - Tests: `ALL` green
   - Depends on: T5
   - Done when: `ALL` green; `run.ps1` opens the app.
-  - Commit: —
+  - Commit: be00d70
 
-- [ ] **T7 · README skeleton**
+- [x] **T7 · README skeleton**
   - Covers: NFR3 · Step S1
   - Files: `README.md` (prerequisites, run, test commands — sections filled later in T56)
   - Tests: `ALL` still green
   - Depends on: T6
   - Done when: README lists prerequisites and the commands above.
-  - Commit: —
+  - Commit: ff12601
 
 ## S2 · Formula engine + error types   (Must) · ~2.5 h
 
@@ -142,6 +142,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Covers: R3.AC1–3 data · Step S3
   - Files: `src/Gaia.Infrastructure/Data/Migrations/*Initial*`
   - Tests: integration "T16: migrated database contains the 10 seeded operations with correct IsSystem flags"
+  - Also: `GaiaApiFactory` migrates its database on start and **drops it on dispose** (S1 review finding)
   - Depends on: T15
   - Done when: `INT` green.
   - Commit: —

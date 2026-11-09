@@ -218,7 +218,7 @@ Test names start with the AC id, e.g. `R2_AC5_divide_by_zero_returns_domain_erro
 | Integration (server, needs LocalDB) | `dotnet test tests/Gaia.Api.Tests` |
 | Component (client) | `npm --prefix client test -- --run` |
 | E2E | `npm --prefix client run e2e` |
-| All | `pwsh scripts/test-all.ps1` |
+| All | `powershell -ExecutionPolicy Bypass -File scripts/test-all.ps1` (Windows PowerShell 5.1 or 7) |
 
 Integration tests create a uniquely named LocalDB database per test class (`GaiaTests_<guid>`), apply migrations, and drop it afterwards; tests within a class clean their own rows.
 
@@ -228,7 +228,7 @@ Integration tests create a uniquely named LocalDB database per test class (`Gaia
 - **Delivers:** foundation for all; NFR3 (skeleton)
 - **Depends on / Unblocks:** prerequisites installed (.NET 10 SDK, Node 22 LTS, SQL Server LocalDB, git) / everything
 - **Files owned:** solution, 3 src + 2 test projects, `client/` Vite React (JavaScript) scaffold (trimmed of demo code), `scripts/run.ps1`, `scripts/test-all.ps1`, `README.md` skeleton, `.gitignore`
-- **Outline:** `git init`; one passing smoke test per level (xUnit unit, WebApplicationFactory `GET /health`→200 deleted later, Vitest render, Playwright opens page); Vite proxy `/api` → `http://localhost:5080` (plain HTTP in dev so neither Vite nor Playwright needs the dev certificate trusted).
+- **Outline:** `git init`; one passing smoke test per level (xUnit unit, WebApplicationFactory `GET /health`→200 — `/health` stays: run.ps1 and Playwright use it as the readiness check; E2E runs on its own ports, API 5081 and Vite 5174, Vitest render, Playwright opens page); Vite proxy `/api` → `http://localhost:5080` (plain HTTP in dev so neither Vite nor Playwright needs the dev certificate trusted).
 - **Done when:** all five test commands run green.
 
 ### S2 · Formula engine + error types   (Must) · ~2.5 h

@@ -1,5 +1,6 @@
 # Runs every test level in order and stops at the first failure.
 # Usage (from the repository root):  powershell -ExecutionPolicy Bypass -File scripts/test-all.ps1
+$ErrorActionPreference = 'Stop'   # a missing tool (dotnet/npm not found) stops the script with exit code 1
 $root = Split-Path -Parent $PSScriptRoot
 
 $steps = @(
@@ -11,10 +12,11 @@ $steps = @(
 
 foreach ($step in $steps) {
     Write-Host "`n=== $($step.Name) ===" -ForegroundColor Cyan
+    $global:LASTEXITCODE = -1   # so a step that never ran a program can't inherit the previous step's 0
     & $step.Command
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "`n$($step.Name) FAILED" -ForegroundColor Red
-        exit $LASTEXITCODE
+        Write-Host "`n$($step.Name) FAILED (exit code $LASTEXITCODE)" -ForegroundColor Red
+        exit 1
     }
 }
 
