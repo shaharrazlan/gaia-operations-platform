@@ -473,4 +473,5 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 - [ ] **T54 · Deep review**: `/code-review high`, `/simplify`, `/security-review` (formula input, management key). Fix the confirmed findings.
 - [ ] **T55 · Verify against the spec**: run `sdd-verify`.
+  - Carry-overs to check here (noted during S1–S5): measure **warm** execute latency vs NFR1 (< 200 ms; the first call after start took 1–3 s, cold start); actually launch `scripts/run.ps1` (not yet run — it opens windows); fresh-clone run per NFR3.
 - [ ] **T56 · Polish & submit**: README (setup, run, test commands, formula language reference, interpretations A5/A8/A9, Security section, known limitations, trade-offs), no secrets beyond the documented dev key, clean history, Submission notes in plan.md, create the **private** GitHub repo and push (needs your OK), invite the reviewer.
