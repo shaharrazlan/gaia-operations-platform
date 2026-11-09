@@ -14,6 +14,7 @@ export default function CalculatorView() {
   const [fieldB, setFieldB] = useState('')
   const [outcome, setOutcome] = useState(null) // { result } or { error, field }
   const [busy, setBusy] = useState(false)
+  const [attempt, setAttempt] = useState(0) // bump to load the operation list again
 
   useEffect(() => {
     let active = true // ignore the answer if the view was closed meanwhile
@@ -28,9 +29,23 @@ export default function CalculatorView() {
     return () => {
       active = false
     }
-  }, [api])
+  }, [api, attempt])
 
-  if (loadError) return <p className="message error" role="alert">{loadError}</p>
+  if (loadError)
+    return (
+      <div className="message error" role="alert">
+        <p>{loadError}</p>
+        <button
+          type="button"
+          onClick={() => {
+            setLoadError(null)
+            setAttempt((n) => n + 1)
+          }}
+        >
+          Try again
+        </button>
+      </div>
+    )
   if (operations === null) return <p className="message">Loading operations…</p>
   if (operations.length === 0) return <p className="message">No operations are available right now.</p>
 
@@ -57,12 +72,18 @@ export default function CalculatorView() {
 
   const invalid = (field) => (outcome?.field === field ? true : undefined)
 
+  // Typing in the field the server complained about removes its "invalid" mark (the message stays).
+  function edit(field, setValue, value) {
+    setValue(value)
+    setOutcome((current) => (current?.field === field ? { ...current, field: null } : current))
+  }
+
   return (
     <form className="calculator" onSubmit={handleSubmit}>
       <div className="row">
         <label className="field">
           <span>{operation.fieldALabel}</span>
-          <input name="fieldA" value={fieldA} onChange={(e) => setFieldA(e.target.value)} aria-invalid={invalid('fieldA')} autoComplete="off" />
+          <input name="fieldA" value={fieldA} onChange={(e) => edit('fieldA', setFieldA, e.target.value)} aria-invalid={invalid('fieldA')} autoComplete="off" />
         </label>
 
         <label className="field">
@@ -79,7 +100,7 @@ export default function CalculatorView() {
 
         <label className="field">
           <span>{operation.fieldBLabel}</span>
-          <input name="fieldB" value={fieldB} onChange={(e) => setFieldB(e.target.value)} aria-invalid={invalid('fieldB')} autoComplete="off" />
+          <input name="fieldB" value={fieldB} onChange={(e) => edit('fieldB', setFieldB, e.target.value)} aria-invalid={invalid('fieldB')} autoComplete="off" />
         </label>
 
         <button type="submit" disabled={busy}>

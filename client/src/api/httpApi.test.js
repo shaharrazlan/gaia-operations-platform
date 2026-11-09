@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError, ServiceUnavailableError } from './errors.js'
-import { httpApi } from './httpApi.js'
+import { createHttpApi, httpApi } from './httpApi.js'
 
 function respond(status, body, contentType = 'application/problem+json') {
   return vi.fn().mockResolvedValue(
@@ -56,5 +56,30 @@ describe('httpApi', () => {
     vi.stubGlobal('fetch', respond(500, 'Proxy error: ECONNREFUSED', 'text/plain'))
 
     await expect(httpApi.getOperations()).rejects.toBeInstanceOf(ServiceUnavailableError)
+  })
+
+  it('R5.AC5: a 2xx answer that is not JSON is ServiceUnavailable, not a raw parse error', async () => {
+    vi.stubGlobal('fetch', respond(200, '<!doctype html><p>Some other server</p>', 'text/html'))
+
+    await expect(httpApi.getOperations()).rejects.toBeInstanceOf(ServiceUnavailableError)
+  })
+
+  it('R5.AC5: a server that never answers becomes ServiceUnavailable after the timeout', async () => {
+    const hang = vi.fn(
+      (_url, init) =>
+        new Promise((_resolve, reject) => init.signal.addEventListener('abort', () => reject(init.signal.reason))),
+    )
+    vi.stubGlobal('fetch', hang)
+
+    await expect(createHttpApi({ timeoutMs: 20 }).getOperations()).rejects.toBeInstanceOf(ServiceUnavailableError)
+  })
+
+  it('T25: GET requests carry no Content-Type (no CORS preflight)', async () => {
+    const fetch = respond(200, [], 'application/json')
+    vi.stubGlobal('fetch', fetch)
+
+    await httpApi.getOperations()
+
+    expect(fetch.mock.calls[0][1].headers['Content-Type']).toBeUndefined()
   })
 })

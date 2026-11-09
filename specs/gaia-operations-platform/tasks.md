@@ -221,29 +221,31 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 ## S5 · React calculator   (Must) · ~1.5 h
 
-- [ ] **T25 · API client layer**
+- [x] **T25 · API client layer**
   - Covers: R2.AC6 (client side), R5.AC5 · Step S5
   - Files: `client/src/api/errors.js`, `httpApi.js`, `fakeApi.js`, `ApiContext.jsx`, `client/src/api/httpApi.test.js`
   - Tests: component "T25: non-2xx problem response becomes ApiError with code, detail, field"; component "R5.AC5: network failure becomes ServiceUnavailableError"
   - Depends on: T3 (contract from plan; real API not needed)
   - Done when: `COMP` green.
-  - Commit: —
+  - Commit: a58faeb
 
-- [ ] **T26 · Calculator form**
+- [x] **T26 · Calculator form**
   - Covers: R5.AC1, R5.AC2 · Step S5
   - Files: `client/src/App.jsx`, `client/src/views/CalculatorView.jsx`, `client/src/styles.css`, `client/src/views/CalculatorView.test.jsx`
   - Tests: component "R5.AC1: select lists operations from the API"; component "R5.AC2: field labels follow the selected operation"
   - Depends on: T25
   - Done when: `COMP` green.
-  - Commit: —
+  - Commit: 6740159
 
-- [ ] **T27 · Calculate result and errors**
+- [x] **T27 · Calculate result and errors**
   - Covers: R5.AC3, R5.AC4, R5.AC5, R6.AC1 · Step S5
   - Files: `CalculatorView.jsx`, `CalculatorView.test.jsx`
   - Tests: component "R5.AC3: Calculate shows the result"; component "R5.AC4: server error detail is shown and no result"; component "R5.AC5: unreachable server shows 'Service unavailable'"; component "R6.AC1: shown result is exactly the API value"
   - Depends on: T26
   - Done when: `COMP` green; manual check against the running API.
-  - Commit: —
+  - Commit: 4df092a
+  - Real-app check (built-in browser, real API): 7÷2 = 3.5, 5÷0 → 'Division by zero.', live Open-Meteo weather for Tel Aviv, API stopped → 'Service unavailable'. Found and fixed: result box rendered as an inline sliver (dc9299c).
+  - S5 review: 15 s client timeout, 'Try again' after a failed catalog load, non-JSON 2xx → Service unavailable, invalid mark clears on edit, no Content-Type on GET; `fakeApi.js` moved to `src/test/` (test-only, imports vitest).
 
 ## S6 · Management API   (Should) · ~1.75 h
 

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ApiContext } from '../api/ApiContext.jsx'
 import { ApiError, ServiceUnavailableError } from '../api/errors.js'
-import { createFakeApi } from '../api/fakeApi.js'
+import { createFakeApi } from '../test/fakeApi.js'
 import CalculatorView from './CalculatorView.jsx'
 
 function renderCalculator(api = createFakeApi()) {
@@ -108,6 +108,31 @@ describe('CalculatorView — calculate', () => {
     renderCalculator(createFakeApi({ getOperations: vi.fn().mockRejectedValue(new ServiceUnavailableError()) }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Service unavailable/)
+  })
+
+  it('R5.AC5: "Try again" loads the operation list again once the server is back', async () => {
+    const getOperations = vi
+      .fn()
+      .mockRejectedValueOnce(new ServiceUnavailableError())
+      .mockResolvedValueOnce([{ id: 'add', name: 'Add', fieldALabel: 'A', fieldBLabel: 'B' }])
+    renderCalculator(createFakeApi({ getOperations }))
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Try again' }))
+
+    expect(await screen.findByRole('combobox', { name: 'Operation' })).toBeInTheDocument()
+    expect(getOperations).toHaveBeenCalledTimes(2)
+  })
+
+  it('R5.AC4: editing the field the server complained about clears its invalid mark', async () => {
+    const error = new ApiError({ status: 400, code: 'validation_error', detail: 'Field A must be a number.', field: 'fieldA' })
+    renderCalculator(createFakeApi({ execute: vi.fn().mockRejectedValue(error) }))
+    await calculate('abc', '2')
+    await screen.findByRole('alert')
+    const [fieldA] = screen.getAllByRole('textbox')
+
+    await userEvent.type(fieldA, '1')
+
+    expect(fieldA).not.toHaveAttribute('aria-invalid', 'true')
   })
 
   it('T27: the button is disabled while waiting for the server', async () => {
