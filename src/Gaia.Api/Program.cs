@@ -1,7 +1,10 @@
 using System.Text.Json.Serialization;
+using Gaia.Api.Errors;
+using Gaia.Core.Errors;
 using Gaia.Core.Operations;
 using Gaia.Core.Services;
 using Gaia.Infrastructure.Data;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +21,21 @@ builder.Services.AddScoped<IOperationRepository, EfOperationRepository>();
 builder.Services.AddScoped<OperationService>();
 
 builder.Services.AddControllers()
-    .AddJsonOptions(json => json.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+    .AddJsonOptions(json => json.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
+    .ConfigureApiBehaviorOptions(api =>
+        // A body that isn't valid JSON gets the same shape and "code" as every other error (R2.AC6).
+        api.InvalidModelStateResponseFactory = context =>
+        {
+            var (field, errors) = context.ModelState.First(entry => entry.Value!.Errors.Count > 0);
+            var problem = ProblemDetailsMapper.Problem(StatusCodes.Status400BadRequest, "Invalid request",
+                errors!.Errors[0].ErrorMessage is { Length: > 0 } message ? message : "The request body is not valid JSON.",
+                ErrorCodes.Validation, field);
+            return new BadRequestObjectResult(problem) { ContentTypes = { "application/problem+json" } };
+        });
+
+// Every error becomes a ProblemDetails response with a "code" (see ProblemDetailsMapper).
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ProblemDetailsMapper>();
 
 var app = builder.Build();
 
@@ -35,6 +52,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("E2E"))
 }
 
 // --- HTTP pipeline ---
+app.UseExceptionHandler();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapControllers();
 
