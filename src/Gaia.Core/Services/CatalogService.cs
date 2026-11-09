@@ -17,7 +17,7 @@ public sealed record OperationInput(
     string? FieldBLabel,
     InputType? InputType,
     string? Formula,
-    bool IsEnabled = true,
+    bool? IsEnabled = null,   // left out: enabled on create, unchanged on update
     string? Version = null);
 
 /// <summary>
@@ -59,7 +59,7 @@ public sealed partial class CatalogService(IOperationRepository repository, Time
             InputType = details.InputType,
             Formula = formula,
             IsSystem = false,
-            IsEnabled = input.IsEnabled,
+            IsEnabled = input.IsEnabled ?? true,
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
         }, cancellationToken);
@@ -105,7 +105,7 @@ public sealed partial class CatalogService(IOperationRepository repository, Time
             InputType = details.InputType,
             Formula = formula,
             IsSystem = current.IsSystem,
-            IsEnabled = input.IsEnabled,
+            IsEnabled = input.IsEnabled ?? current.IsEnabled,
             IsDeleted = false,
             CreatedAtUtc = current.CreatedAtUtc,
             UpdatedAtUtc = time.GetUtcNow().UtcDateTime,

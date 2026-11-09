@@ -30,8 +30,8 @@ public sealed class OperationUpsertDto
     /// <summary>A formula over A and B, e.g. "(A + B) / 2" or "concat(A, \" \", B)". Required for custom operations.</summary>
     public string? Formula { get; init; }
 
-    /// <summary>Disabled operations are hidden from users but kept. Default: true.</summary>
-    public bool IsEnabled { get; init; } = true;
+    /// <summary>Disabled operations are hidden from users but kept. Left out: true on POST, unchanged on PUT.</summary>
+    public bool? IsEnabled { get; init; }
 
     /// <summary>PUT only: the "version" you received when you loaded the operation (R4.AC7). Ignored on POST.</summary>
     public string? Version { get; init; }

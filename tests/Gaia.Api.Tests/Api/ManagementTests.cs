@@ -251,6 +251,17 @@ public class ManagementTests(GaiaApiFactory factory) : IClassFixture<GaiaApiFact
     }
 
     [Fact]
+    public async Task S6_a_bad_query_value_is_400_naming_the_parameter()
+    {
+        var response = await _client.GetAsync("/api/operations?includeDisabled=yes");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("validation_error", problem.GetProperty("code").GetString());
+        Assert.Equal("includeDisabled", problem.GetProperty("field").GetString());
+    }
+
+    [Fact]
     public async Task R4_AC4_an_unknown_kind_is_400_naming_the_field()
     {
         var response = await _client.PostAsJsonAsync("/api/operations", new { id = NewId("bad"), kind = "Magic" });

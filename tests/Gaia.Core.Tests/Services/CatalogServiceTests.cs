@@ -239,6 +239,24 @@ public class CatalogServiceTests
     }
 
     [Fact]
+    public async Task S6_an_update_that_leaves_out_isEnabled_keeps_the_current_state()
+    {
+        var repository = new FakeRepository(Op("avg", enabled: false));
+
+        var saved = await Service(repository).UpdateAsync("avg", Same(repository.Rows[0]) with { Name = "Mean", IsEnabled = null });
+
+        Assert.False(saved.IsEnabled);
+    }
+
+    [Fact]
+    public async Task S6_a_create_that_leaves_out_isEnabled_is_enabled()
+    {
+        var created = await Service(new FakeRepository()).CreateAsync(Input() with { IsEnabled = null });
+
+        Assert.True(created.IsEnabled);
+    }
+
+    [Fact]
     public async Task R4_AC2_a_custom_operation_can_change_its_formula_kind_and_input_type()
     {
         var repository = new FakeRepository(Op("avg", "(A + B) / 2"));

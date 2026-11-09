@@ -11,6 +11,7 @@ using Gaia.Core.Services;
 using Gaia.Infrastructure.Data;
 using Gaia.Infrastructure.Weather;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 
@@ -51,11 +52,14 @@ builder.Services.AddControllers()
         // A body that isn't valid JSON gets the same shape and "code" as every other error (R2.AC6).
         api.InvalidModelStateResponseFactory = context =>
         {
-            // Prefer an error that points at a JSON field ("$.fieldA" → "fieldA") over the generic body error.
-            var field = context.ModelState
-                .Where(e => e.Value!.Errors.Count > 0 && e.Key.StartsWith("$.", StringComparison.Ordinal))
-                .Select(e => e.Key[2..])
-                .FirstOrDefault();
+            // Name the field: a JSON property ("$.fieldA" → "fieldA") or a query/route value ("includeDisabled").
+            // The key of the body itself ("request") only means "the body isn't valid JSON".
+            var failed = context.ModelState.Where(e => e.Value!.Errors.Count > 0).Select(e => e.Key).ToList();
+            var bodyNames = context.ActionDescriptor.Parameters
+                .Where(p => p.BindingInfo?.BindingSource == BindingSource.Body)
+                .Select(p => p.Name);
+            var field = failed.Where(k => k.StartsWith("$.", StringComparison.Ordinal)).Select(k => k[2..]).FirstOrDefault()
+                ?? failed.FirstOrDefault(k => k.Length > 0 && !bodyNames.Contains(k));
             var problem = ProblemDetailsMapper.Problem(StatusCodes.Status400BadRequest, "Invalid request",
                 field is null ? "The request body must be valid JSON (see /swagger for examples)." : $"'{field}' has a value of the wrong type or an unknown value.",
                 ErrorCodes.Validation, field);

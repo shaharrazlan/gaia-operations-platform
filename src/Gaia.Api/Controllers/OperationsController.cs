@@ -61,10 +61,12 @@ public class OperationsController(OperationService operations, CatalogService ca
     /// <response code="204">Removed.</response>
     /// <response code="400">system_cannot_delete.</response>
     /// <response code="404">operation_not_found.</response>
+    /// <response code="409">edit_conflict — someone changed it at the same moment; reload and try again.</response>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
     public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
     {
         await catalog.DeleteAsync(id, cancellationToken);

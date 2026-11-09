@@ -291,8 +291,9 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: integration "R4.AC3: DELETE hides op, execute → 404, its runs remain"; integration "R4.AC5: swagger.json lists POST, PUT and DELETE"; integration "T32: includeDisabled=true returns disabled ops"
   - Depends on: T31
   - Done when: `INT` green.
-  - Commit: (T32)
+  - Commit: 98922e9
   - Note: "its runs remain" is proven as "the row is kept (soft delete)"; history rows arrive in S8, whose T41+ tests re-check it. `includeDisabled` is open until S12 adds the key.
+  - S6 review (high): PUT without `isEnabled` no longer re-enables a disabled op (left out = unchanged); a DB failure while saving (`DbUpdateException` → `DbException`) is 503, not 500; bad query values (`?includeDisabled=yes`) name the parameter instead of blaming the body; DELETE documents its possible 409. Kept on purpose: `OperationUpsertDto` mirrors `OperationInput` (Swagger docs stay in the API layer, Core stays HTTP-free). Open management calls → S12. `/simplify` angles were covered inside the high review; `/security-review` runs with S12 (the auth step) and in T54.
 
 ## S7 · Manage operations view   (Should) · ~1.75 h
 

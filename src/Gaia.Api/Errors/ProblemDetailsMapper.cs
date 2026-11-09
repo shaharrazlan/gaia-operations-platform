@@ -2,6 +2,7 @@ using System.Data.Common;
 using Gaia.Core.Errors;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Gaia.Api.Errors;
 
@@ -37,6 +38,10 @@ public sealed class ProblemDetailsMapper(IProblemDetailsService problemDetailsSe
 
     public static ProblemDetails ToProblem(Exception exception)
     {
+        // A failure while saving arrives wrapped: DbUpdateException → the real DbException inside.
+        if (exception is DbUpdateException { InnerException: DbException inner })
+            exception = inner;
+
         var (status, title, detail) = exception switch
         {
             ValidationException e => (StatusCodes.Status400BadRequest, "Invalid request", e.Message),
