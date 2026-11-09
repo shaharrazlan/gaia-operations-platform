@@ -1,0 +1,150 @@
+/* Gaia — one small stylesheet. Colors are variables so dark mode only swaps values. */
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --text: #1c2430;
+  --muted: #5d6b7a;
+  --border: #d5dce3;
+  --accent: #2f7d5b;
+  --accent-text: #ffffff;
+  --error-bg: #fdecec;
+  --error-text: #a12424;
+  --result-bg: #eaf5ef;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12161b;
+    --surface: #1b2128;
+    --text: #e6ebf0;
+    --muted: #9aa7b4;
+    --border: #2e3741;
+    --accent: #4fb889;
+    --accent-text: #0d1a14;
+    --error-bg: #3a1d1d;
+    --error-text: #ffb4b4;
+    --result-bg: #17302a;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+.app {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  letter-spacing: 0.02em;
+}
+
+.tagline {
+  margin: 4px 0 24px;
+  color: var(--muted);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+/* Field A | Operation | Field B | Calculate — one row on wide screens, stacked on phones. */
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+@media (max-width: 640px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+input,
+select,
+button {
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  min-width: 0;
+}
+
+input:focus,
+select:focus,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+button {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.message {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  color: var(--muted);
+}
+
+.message.error {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.result {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--result-bg);
+}
+
+.result-label {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.result-value {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
