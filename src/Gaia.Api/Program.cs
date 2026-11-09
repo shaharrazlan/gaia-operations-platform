@@ -7,6 +7,7 @@ using Gaia.Infrastructure.Data;
 using Gaia.Infrastructure.Weather;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,6 +51,19 @@ builder.Services.AddControllers()
             return new BadRequestObjectResult(problem) { ContentTypes = { "application/problem+json" } };
         });
 
+// Swagger UI at /swagger: lets anyone (reviewers, external developers) read and try the API in a browser.
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(swagger =>
+{
+    swagger.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Gaia Operations Platform API",
+        Version = "v1",
+        Description = "Run operations on two inputs (Field A, Field B), and list or manage the operation catalog.",
+    });
+    swagger.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Gaia.Api.xml"));
+});
+
 // Every error becomes a ProblemDetails response with a "code" (see ProblemDetailsMapper).
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ProblemDetailsMapper>();
@@ -75,6 +89,8 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("E2E"))
 
 // --- HTTP pipeline ---
 app.UseExceptionHandler();
+app.UseSwagger();
+app.UseSwaggerUI();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapControllers();
 
