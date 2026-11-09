@@ -4,6 +4,7 @@ using Gaia.Core.Errors;
 using Gaia.Core.Operations;
 using Gaia.Core.Services;
 using Gaia.Infrastructure.Data;
+using Gaia.Infrastructure.Weather;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,6 +20,22 @@ builder.Services.AddDbContext<GaiaDbContext>((services, options) =>
 });
 builder.Services.AddScoped<IOperationRepository, EfOperationRepository>();
 builder.Services.AddScoped<OperationService>();
+
+// Code operations (IOperationHandler). Today only weather: real Open-Meteo, or a fixed fake answer.
+var weather = builder.Configuration.GetSection("Weather").Get<WeatherOptions>() ?? new WeatherOptions();
+builder.Services.AddSingleton(weather);
+switch (weather.Provider.ToLowerInvariant())
+{
+    case "openmeteo":
+        builder.Services.AddHttpClient<OpenMeteoWeatherHandler>(http => http.BaseAddress = new Uri(weather.BaseUrl));
+        builder.Services.AddScoped<IOperationHandler>(services => services.GetRequiredService<OpenMeteoWeatherHandler>());
+        break;
+    case "fake":
+        builder.Services.AddScoped<IOperationHandler, FakeWeatherHandler>();
+        break;
+    default:
+        throw new InvalidOperationException($"Unknown Weather:Provider '{weather.Provider}'. Use 'OpenMeteo' or 'Fake'.");
+}
 
 builder.Services.AddControllers()
     .AddJsonOptions(json => json.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
@@ -49,6 +66,11 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("E2E"))
     if (app.Environment.IsEnvironment("E2E"))
         await db.Database.EnsureDeletedAsync();
     await db.Database.MigrateAsync();
+
+    // Fail fast if an operation in the database has neither a formula nor a C# handler.
+    HandlerCheck.EnsureEveryCodeOperationHasAHandler(
+        await db.Operations.AsNoTracking().ToListAsync(),
+        scope.ServiceProvider.GetServices<IOperationHandler>());
 }
 
 // --- HTTP pipeline ---
