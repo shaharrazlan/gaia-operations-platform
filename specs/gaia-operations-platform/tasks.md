@@ -1,0 +1,467 @@
+# Gaia Operations Platform: Tasks
+
+**Status:** Approved (2026-11-09)
+**Plan:** [plan.md](plan.md) (approved 2026-11-09)
+
+**Commands** (from plan.md):
+`UNIT` = `dotnet test tests/Gaia.Core.Tests` · `INT` = `dotnet test tests/Gaia.Api.Tests` · `COMP` = `npm --prefix client test -- --run` · `E2E` = `npm --prefix client run e2e` · `ALL` = `pwsh scripts/test-all.ps1`
+
+Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 → S9 → S10 → S11 → Review & verify.
+**[P]** = can run in parallel with the other [P] tasks of the same step.
+
+---
+
+## S1 · Project setup   (Must) · ~1 h
+
+- [x] **T1 · Install prerequisites** (approved by user 2026-11-09)
+  - Covers: NFR3 · Step S1
+  - Files: none (machine setup)
+  - Tests: `dotnet --version` ≥ 10, `node --version` ≥ 22, `sqllocaldb info MSSQLLocalDB`, `git --version` all succeed
+  - Depends on: —
+  - Done when: the four commands succeed (via `winget`: .NET 10 SDK, Node.js LTS, SQL Server Express LocalDB, Git).
+  - Commit: — (no repo yet)
+  - Note: installed .NET SDK 10.0.403, Node v26.13.0 (current LTS), Git 2.56, SQL Server 2022 **LocalDB** (MSI fetched with Microsoft's SSEI bootstrapper; the full Express winget package failed with 1009 when run silently). LocalDB is what the plan uses.
+
+- [ ] **T2 · Server solution skeleton** [P]
+  - Covers: foundation · Step S1
+  - Files: `Gaia.sln`, `Directory.Build.props`, `.gitignore`, `src/Gaia.Core/`, `src/Gaia.Infrastructure/`, `src/Gaia.Api/` (empty `Program.cs` with `GET /health`)
+  - Tests: `dotnet build` succeeds
+  - Depends on: T1
+  - Done when: `git init` done; solution builds; first commit.
+  - Commit: —
+
+- [ ] **T3 · Client scaffold** [P]
+  - Covers: foundation · Step S1
+  - Files: `client/` (Vite React JS; demo code removed), `client/vite.config.js` (proxy `/api` → API URL, Vitest + jsdom), `client/src/main.jsx`, `client/src/smoke.test.jsx`
+  - Tests: component "T3: app renders" — `COMP` green
+  - Depends on: T1
+  - Done when: `COMP` green; `npm --prefix client run dev` serves a blank page.
+  - Commit: —
+
+- [ ] **T4 · Server test projects**
+  - Covers: foundation · Step S1
+  - Files: `tests/Gaia.Core.Tests/`, `tests/Gaia.Api.Tests/` (`GaiaApiFactory` using a per-class LocalDB database `GaiaTests_<guid>`)
+  - Tests: unit "T4: smoke"; integration "T4: GET /health returns 200"
+  - Depends on: T2
+  - Done when: `UNIT` and `INT` green.
+  - Commit: —
+
+- [ ] **T5 · Playwright setup**
+  - Covers: foundation · Step S1
+  - Files: `client/playwright.config.js` (`webServer` starts API with `ASPNETCORE_ENVIRONMENT=E2E` + Vite), `client/e2e/smoke.spec.js`
+  - Tests: e2e "T5: home page loads" — `E2E` green
+  - Depends on: T3, T4
+  - Done when: `E2E` green (Chromium installed via `npx playwright install chromium`).
+  - Commit: —
+
+- [ ] **T6 · Dev scripts**
+  - Covers: NFR3 · Step S1
+  - Files: `scripts/run.ps1` (starts API + Vite, opens browser), `scripts/test-all.ps1` (runs UNIT, INT, COMP, E2E; non-zero exit on failure)
+  - Tests: `ALL` green
+  - Depends on: T5
+  - Done when: `ALL` green; `run.ps1` opens the app.
+  - Commit: —
+
+- [ ] **T7 · README skeleton**
+  - Covers: NFR3 · Step S1
+  - Files: `README.md` (prerequisites, run, test commands — sections filled later in T56)
+  - Tests: `ALL` still green
+  - Depends on: T6
+  - Done when: README lists prerequisites and the commands above.
+  - Commit: —
+
+## S2 · Formula engine + error types   (Must) · ~2.5 h
+
+- [ ] **T8 · Error types**
+  - Covers: R2.AC6 (codes) · Step S2
+  - Files: `src/Gaia.Core/Errors/*.cs` (`GaiaException` base with `Code`, `Field`; `ValidationException`, `NotFoundException`, `DomainException`, `ExternalServiceException`, `ConflictException`)
+  - Tests: unit "T8: each exception type carries its error code"
+  - Depends on: T4
+  - Done when: `UNIT` green.
+  - Commit: —
+
+- [ ] **T9 · Tokenizer** [P]
+  - Covers: R4.AC4 (positions) · Step S2
+  - Files: `src/Gaia.Core/Formulas/Token.cs`, `Tokenizer.cs`, `tests/Gaia.Core.Tests/Formulas/TokenizerTests.cs`
+  - Tests: unit "T9: tokenizes numbers, strings, A/B, operators, parentheses, commas with positions"; unit "R4.AC4: unexpected character '#' reports its position"; unit "R4.AC4: unterminated string reports its position"
+  - Depends on: T8
+  - Done when: `UNIT` green.
+  - Commit: —
+
+- [ ] **T10 · Input parser** [P]
+  - Covers: R2.AC4, R3.AC5 · Step S2
+  - Files: `src/Gaia.Core/Operations/InputType.cs`, `InputParser.cs`, `tests/…/InputParserTests.cs`
+  - Tests: unit "R3.AC5: parses '-2.5' and '10' as numbers"; unit "R3.AC5: rejects '3,5', '1e3' and 'abc'"; unit "R2.AC4: rejects latitude 95 and longitude -181 with field name"; unit "R2.AC4: Text input accepts any string"
+  - Depends on: T8
+  - Done when: `UNIT` green.
+  - Commit: —
+
+- [ ] **T11 · Parser (AST)**
+  - Covers: R4.AC4, NFR6 · Step S2
+  - Files: `src/Gaia.Core/Formulas/Ast.cs`, `FormulaParser.cs`, `tests/…/FormulaParserTests.cs`
+  - Tests: unit "T11: precedence — 1 + 2 * 3 ^ 2 parses as 1 + (2 * (3 ^ 2))"; unit "T11: ^ is right-associative"; unit "T11: unary minus"; unit "R4.AC4: missing ')' reports position"; unit "R4.AC4: unknown identifier 'C' is an error"; unit "NFR6: 'File.Delete(\"x\")' is a parse error"; unit "NFR6: nesting deeper than 50 is rejected"; unit "NFR6: formula over 500 chars is rejected"
+  - Depends on: T9
+  - Done when: `UNIT` green.
+  - Commit: —
+
+- [ ] **T12 · Evaluator (operators)**
+  - Covers: R2.AC5 · Step S2
+  - Files: `src/Gaia.Core/Formulas/Value.cs`, `Evaluator.cs`, `tests/…/EvaluatorTests.cs`
+  - Tests: unit "T12: arithmetic and comparison operators"; unit "T12: + concatenates two texts"; unit "R2.AC5: division by zero is a domain error"; unit "R2.AC5: modulo by zero is a domain error"; unit "R2.AC5: NaN or infinite result is a domain error"; unit "R2.AC5: number + text is a type (domain) error"
+  - Depends on: T11
+  - Done when: `UNIT` green.
+  - Commit: —
+
+- [ ] **T13 · Function whitelist**
+  - Covers: R3.AC2, NFR6 · Step S2
+  - Files: `src/Gaia.Core/Formulas/Functions.cs`, `tests/…/FunctionsTests.cs`
+  - Tests: unit "R3.AC2: concat('foo','bar') = 'foobar'"; unit "R3.AC2: count('banana','an') = 2"; unit "T13: sqrt abs round min max floor ceil upper lower len trim replace contains if"; unit "NFR6: unknown function 'exec' is rejected at parse time"; unit "T13: wrong arity is rejected at parse time"; unit "R2.AC5: sqrt(-1) is a domain error"
+  - Depends on: T12
+  - Done when: `UNIT` green.
+  - Commit: —
+
+- [ ] **T14 · FormulaEngine facade**
+  - Covers: R3.AC1 · Step S2
+  - Files: `src/Gaia.Core/Formulas/FormulaEngine.cs`, `ResultFormatter.cs`, `tests/…/FormulaEngineTests.cs`
+  - Tests: unit "R3.AC1: with A=7, B=2 the seeded formulas give add 9, subtract 5, multiply 14, divide 3.5, power 49"; unit "T14: 0.1 + 0.2 formats as 0.3"; unit "T14: Validate returns error with position for a bad formula"
+  - Depends on: T10, T13
+  - Done when: `UNIT` green.
+  - Commit: —
+
+## S3 · Data layer   (Must) · ~0.75 h
+
+- [ ] **T15 · DbContext and Operation entity**
+  - Covers: foundation for R1/R4 · Step S3
+  - Files: `src/Gaia.Core/Operations/OperationDefinition.cs`, `src/Gaia.Infrastructure/Data/GaiaDbContext.cs`, `Data/OperationEntityConfig.cs` (incl. `Version` rowversion, `IsSystem`)
+  - Tests: `dotnet build` + `UNIT` green
+  - Depends on: T14
+  - Done when: builds.
+  - Commit: —
+
+- [ ] **T16 · Initial migration with seed**
+  - Covers: R3.AC1–3 data · Step S3
+  - Files: `src/Gaia.Infrastructure/Data/Migrations/*Initial*`
+  - Tests: integration "T16: migrated database contains the 10 seeded operations with correct IsSystem flags"
+  - Depends on: T15
+  - Done when: `INT` green.
+  - Commit: —
+
+- [ ] **T17 · Operation repository**
+  - Covers: R1.AC2 (data) · Step S3
+  - Files: `src/Gaia.Core/Operations/IOperationRepository.cs`, `src/Gaia.Infrastructure/Data/EfOperationRepository.cs`
+  - Tests: integration "T17: GetEnabled excludes disabled and deleted"; integration "T17: GetById returns null for unknown id"
+  - Depends on: T16
+  - Done when: `INT` green.
+  - Commit: —
+
+## S4 · Catalog + execute API, weather   (Must) · ~2 h
+
+- [ ] **T18 · OperationService (formula path)**
+  - Covers: R2.AC1, R2.AC2, R2.AC3 · Step S4
+  - Files: `src/Gaia.Core/Services/OperationService.cs`, `IOperationHandler.cs`, `IRunRecorder.cs` (+ `NoOpRunRecorder`), `tests/…/OperationServiceTests.cs`
+  - Tests: unit "R2.AC1: executes a formula operation and returns its result"; unit "R2.AC2: unknown or disabled id throws NotFound"; unit "R2.AC3: missing field A throws Validation with field 'fieldA'"
+  - Depends on: T17
+  - Done when: `UNIT` green.
+  - Commit: —
+
+- [ ] **T19 · Catalog endpoint**
+  - Covers: R1.AC1, R1.AC2, R1.AC3 · Step S4
+  - Files: `src/Gaia.Api/Controllers/OperationsController.cs` (GET), `src/Gaia.Api/Contracts/OperationDto.cs`, `Program.cs` (DI, EF, auto-migrate in Development/E2E)
+  - Tests: integration "R1.AC1: GET /api/operations returns seeded ops with id, name, kind, labels"; integration "R1.AC2: disabled and deleted ops are absent"; integration "R1.AC3: all disabled returns [] with 200"
+  - Depends on: T18
+  - Done when: `INT` green.
+  - Commit: —
+
+- [ ] **T20 · Execute endpoint and error mapping**
+  - Covers: R2.AC1–6, R6.AC2 · Step S4
+  - Files: `OperationsController.cs` (execute), `src/Gaia.Api/Contracts/ExecuteRequest.cs`, `ExecuteResponse.cs`, `src/Gaia.Api/Errors/ProblemDetailsMapper.cs`
+  - Tests: integration "R2.AC1: POST execute divide 7,2 returns 3.5"; integration "R2.AC2: unknown id → 404 operation_not_found naming the id"; integration "R2.AC3: missing fieldA → 400 with field"; integration "R2.AC4: 'abc' for a Number op → 400 validation_error"; integration "R2.AC5: divide by zero → 422 domain_error"; integration "R2.AC6: each error kind has a distinct code" (table-driven); integration "R6.AC2: HTTP result equals OperationService result for the same inputs"; integration "T20: database down → 503 database_unavailable"
+  - Depends on: T19
+  - Done when: `INT` green.
+  - Commit: —
+
+- [ ] **T21 · Open-Meteo weather handler** [P]
+  - Covers: R3.AC3, R3.AC4, NFR2 · Step S4
+  - Files: `src/Gaia.Infrastructure/Weather/OpenMeteoWeatherHandler.cs`, `WeatherCodes.cs`, `FakeWeatherHandler.cs`, `tests/…/OpenMeteoWeatherHandlerTests.cs` (fake `HttpMessageHandler`)
+  - Tests: unit "R3.AC3: maps Open-Meteo JSON to 'Partly cloudy, 12–21 °C'"; unit "R3.AC4: HTTP 500 → ExternalServiceException"; unit "R3.AC4: malformed JSON → ExternalServiceException"; unit "NFR2: no answer within 5 s → external_service_timeout"
+  - Depends on: T18
+  - Done when: `UNIT` green.
+  - Commit: —
+
+- [ ] **T22 · Weather wired into the API**
+  - Covers: R3.AC3, R3.AC4 · Step S4
+  - Files: `OperationService.cs` (handler lookup), `Program.cs` (`Weather:Provider` config, typed HttpClient, startup check that every system op without a formula has a handler)
+  - Tests: integration "R3.AC3: execute weather 32.08,34.78 with stubbed HTTP returns forecast line"; integration "R3.AC4: stubbed provider failure → 502 external_service_error"; unit "T22: startup check fails fast when a handler is missing"
+  - Depends on: T20, T21
+  - Done when: `UNIT` and `INT` green.
+  - Commit: —
+
+- [ ] **T23 · Swagger UI**
+  - Covers: (enables R4.AC5) · Step S4
+  - Files: `Program.cs` (Swashbuckle), `Gaia.Api.csproj`
+  - Tests: integration "T23: /swagger/v1/swagger.json lists GET and execute"
+  - Depends on: T22
+  - Done when: `INT` green; `/swagger` loads in a browser.
+  - Commit: —
+
+- [ ] **T24 · A34D marker**
+  - Covers: NFR5, C4 · Step S4
+  - Files: `src/Gaia.Api/Program.cs` (`// A34D` comment), `tests/Gaia.Core.Tests/MarkerTests.cs`
+  - Tests: unit "NFR5: a '// A34D' comment exists under src/Gaia.Api"
+  - Depends on: T23
+  - Done when: `UNIT` green.
+  - Commit: —
+
+## S5 · React calculator   (Must) · ~1.5 h
+
+- [ ] **T25 · API client layer**
+  - Covers: R2.AC6 (client side), R5.AC5 · Step S5
+  - Files: `client/src/api/errors.js`, `httpApi.js`, `fakeApi.js`, `ApiContext.jsx`, `client/src/api/httpApi.test.js`
+  - Tests: component "T25: non-2xx problem response becomes ApiError with code, detail, field"; component "R5.AC5: network failure becomes ServiceUnavailableError"
+  - Depends on: T3 (contract from plan; real API not needed)
+  - Done when: `COMP` green.
+  - Commit: —
+
+- [ ] **T26 · Calculator form**
+  - Covers: R5.AC1, R5.AC2 · Step S5
+  - Files: `client/src/App.jsx`, `client/src/views/CalculatorView.jsx`, `client/src/styles.css`, `client/src/views/CalculatorView.test.jsx`
+  - Tests: component "R5.AC1: select lists operations from the API"; component "R5.AC2: field labels follow the selected operation"
+  - Depends on: T25
+  - Done when: `COMP` green.
+  - Commit: —
+
+- [ ] **T27 · Calculate result and errors**
+  - Covers: R5.AC3, R5.AC4, R5.AC5, R6.AC1 · Step S5
+  - Files: `CalculatorView.jsx`, `CalculatorView.test.jsx`
+  - Tests: component "R5.AC3: Calculate shows the result"; component "R5.AC4: server error detail is shown and no result"; component "R5.AC5: unreachable server shows 'Service unavailable'"; component "R6.AC1: shown result is exactly the API value"
+  - Depends on: T26
+  - Done when: `COMP` green; manual check against the running API.
+  - Commit: —
+
+## S6 · Management API   (Should) · ~1.75 h
+
+- [ ] **T28 · CatalogService create rules**
+  - Covers: R4.AC4 · Step S6
+  - Files: `src/Gaia.Core/Services/CatalogService.cs`, `tests/…/CatalogServiceTests.cs`
+  - Tests: unit "R4.AC4: invalid slug, missing name, or bad formula is rejected"; unit "R4.AC4: duplicate id (incl. soft-deleted) → Conflict duplicate_id"; unit "T28: created operations are always custom"
+  - Depends on: T24
+  - Done when: `UNIT` green.
+  - Commit: —
+
+- [ ] **T29 · CatalogService update and delete rules**
+  - Covers: R4.AC6 · Step S6
+  - Files: `CatalogService.cs`, `CatalogServiceTests.cs`
+  - Tests: unit "R4.AC6: system op — rename and disable allowed"; unit "R4.AC6: system op — formula/kind/input type change → system_logic_readonly"; unit "R4.AC6: deleting a system op → system_cannot_delete"
+  - Depends on: T28
+  - Done when: `UNIT` green.
+  - Commit: —
+
+- [ ] **T30 · POST /operations**
+  - Covers: R4.AC1, R4.AC4 · Step S6
+  - Files: `OperationsController.cs` (POST), `src/Gaia.Api/Contracts/OperationUpsertDto.cs`
+  - Tests: integration "R4.AC1: created op appears in GET and executes, no restart"; integration "R4.AC4: bad formula → 400 formula_invalid, catalog unchanged"; integration "R4.AC4: duplicate id → 409 duplicate_id"
+  - Depends on: T29
+  - Done when: `INT` green.
+  - Commit: —
+
+- [ ] **T31 · PUT /operations/{id} with concurrency**
+  - Covers: R4.AC2, R4.AC6, R4.AC7 · Step S6
+  - Files: `OperationsController.cs` (PUT), `EfOperationRepository.cs` (update with original `Version`)
+  - Tests: integration "R4.AC2: changed formula is used by the next execute"; integration "R4.AC6: PUT formula on divide or weather → 400 system_logic_readonly; rename succeeds"; integration "R4.AC7: two PUTs with the same version → 200 then 409 edit_conflict, first values kept"; integration "R4.AC7: PUT with fresh version → 200"
+  - Depends on: T30
+  - Done when: `INT` green.
+  - Commit: —
+
+- [ ] **T32 · DELETE and management listing**
+  - Covers: R4.AC3, R4.AC5 · Step S6
+  - Files: `OperationsController.cs` (DELETE, `includeDisabled`)
+  - Tests: integration "R4.AC3: DELETE hides op, execute → 404, its runs remain"; integration "R4.AC5: swagger.json lists POST, PUT and DELETE"; integration "T32: includeDisabled=true returns disabled ops"
+  - Depends on: T31
+  - Done when: `INT` green.
+  - Commit: —
+
+## S7 · Manage operations view   (Should) · ~1.75 h
+
+- [ ] **T33 · View switch**
+  - Covers: R12.AC1, R12.AC7 · Step S7
+  - Files: `client/src/App.jsx`, `client/src/App.test.jsx`, `client/src/views/ManageView.jsx` (placeholder)
+  - Tests: component "R12.AC1: top bar switches Calculator ↔ Manage operations"; component "R12.AC7: returning to Calculator re-fetches operations"
+  - Depends on: T27
+  - Done when: `COMP` green.
+  - Commit: —
+
+- [ ] **T34 · Operations table**
+  - Covers: R12.AC2, R12.AC5 · Step S7
+  - Files: `ManageView.jsx`, `ManageView.test.jsx`, `client/src/api/httpApi.js` + `fakeApi.js` (management calls)
+  - Tests: component "R12.AC2: lists enabled and disabled ops, 'built-in' for system code ops"; component "R12.AC5: disable/enable toggle calls API and updates the row"
+  - Depends on: T33
+  - Done when: `COMP` green.
+  - Commit: —
+
+- [ ] **T35 · Add-operation form**
+  - Covers: R12.AC3, R12.AC6 · Step S7
+  - Files: `client/src/components/OperationForm.jsx`, `OperationForm.test.jsx`, `ManageView.jsx` (Add button)
+  - Tests: component "R12.AC3: saving a new op adds it to the list"; component "R12.AC6: formula_invalid message shown next to the form and inputs kept"
+  - Depends on: T34
+  - Done when: `COMP` green.
+  - Commit: —
+
+- [ ] **T36 · Edit form with conflict handling**
+  - Covers: R12.AC4, R12.AC8 · Step S7
+  - Files: `OperationForm.jsx`, `OperationForm.test.jsx`, `ManageView.jsx` (Edit button)
+  - Tests: component "R12.AC4: system op — formula, kind and input type are read-only"; component "R12.AC8: 409 edit_conflict shows the conflict message, keeps inputs, Reload loads the latest"
+  - Depends on: T35
+  - Done when: `COMP` green.
+  - Commit: —
+
+## S12 · Management key   (Should) · ~1 h
+
+- [ ] **T37 · Management key filter**
+  - Covers: R13.AC1, R13.AC2, R13.AC3, R13.AC8 · Step S12
+  - Files: `src/Gaia.Api/Security/RequireManagementKeyAttribute.cs`, `ManagementKeyOptions.cs`, `appsettings.Development.json` (`Management:Key`), `OperationsController.cs` (attributes), `tests/Gaia.Api.Tests/**` (R4 tests send the key)
+  - Tests: integration "R13.AC1: POST/PUT/DELETE without key or with wrong key → 401 unauthorized, catalog unchanged"; integration "R13.AC2: with the key, management works as R4"; integration "R13.AC3: GET and execute need no key"; integration "R13.AC8: no key configured → 401 even with a header, startup warning logged"
+  - Depends on: T36
+  - Done when: `INT` green.
+  - Commit: —
+
+- [ ] **T38 · Swagger Authorize button**
+  - Covers: (keeps R4.AC5 usable) · Step S12
+  - Files: `Program.cs` (security definition for `X-Management-Key`)
+  - Tests: integration "T38: swagger.json declares the X-Management-Key scheme"
+  - Depends on: T37
+  - Done when: `INT` green.
+  - Commit: —
+
+- [ ] **T39 · KeyGate in the UI**
+  - Covers: R13.AC4, R13.AC5 · Step S12
+  - Files: `client/src/components/KeyGate.jsx`, `KeyGate.test.jsx`, `ManageView.jsx` (wrapped), `httpApi.js` (sends header)
+  - Tests: component "R13.AC4: wrong key shows 'Invalid management key' and stays locked"; component "R13.AC4: right key unlocks the view"; component "R13.AC5: key kept in sessionStorage; Lock clears it"
+  - Depends on: T38
+  - Done when: `COMP` green.
+  - Commit: —
+
+- [ ] **T40 · Key-not-shipped check**
+  - Covers: R13.AC6 · Step S12
+  - Files: `client/src/security.test.js`
+  - Tests: component "R13.AC6: the dev key from appsettings.Development.json appears nowhere in client/src or client/dist"
+  - Depends on: T39
+  - Done when: `COMP` green (after `npm --prefix client run build`).
+  - Commit: —
+
+## S8 · History, last 3, monthly count   (Could) · ~1.75 h
+
+- [ ] **T41 · OperationRun storage** [P]
+  - Covers: foundation for R7 · Step S8
+  - Files: `src/Gaia.Core/History/IRunRepository.cs`, `RunRecord.cs`, `src/Gaia.Infrastructure/Data/EfRunRepository.cs`, `GaiaDbContext.cs` (OperationRun), migration `*AddOperationRuns*`
+  - Tests: integration "T41: migration creates OperationRuns with index"
+  - Depends on: T40
+  - Done when: `INT` green.
+  - Commit: —
+
+- [ ] **T42 · Israel month boundary** [P]
+  - Covers: R9.AC4 · Step S8
+  - Files: `src/Gaia.Core/History/IsraelMonth.cs`, `tests/…/IsraelMonthTests.cs`
+  - Tests: unit "R9.AC4: 1st 00:30 Israel time belongs to the new month (winter, UTC+2)"; unit "R9.AC4: same in summer (UTC+3)"
+  - Depends on: T40
+  - Done when: `UNIT` green.
+  - Commit: —
+
+- [ ] **T43 · Record every run**
+  - Covers: R7.AC1, R7.AC2, R7.AC3 · Step S8
+  - Files: `src/Gaia.Core/History/RunRecorder.cs`, `OperationService.cs`, `Program.cs` (swap `IRunRecorder`)
+  - Tests: integration "R7.AC1: success and failure runs stored with all fields"; integration "R7.AC2: a new host on the same DB reads earlier runs"; unit "R7.AC3: run repository failure → result still returned, history null, error logged"
+  - Depends on: T41
+  - Done when: `UNIT` and `INT` green.
+  - Commit: —
+
+- [ ] **T44 · History in the execute response**
+  - Covers: R8.AC1–5, R9.AC1–3 · Step S8
+  - Files: `src/Gaia.Core/History/HistoryService.cs`, `ExecuteResponse.cs`, `OperationsController.cs`
+  - Tests: integration "R8.AC1: 4 prior runs → 3 newest prior, current excluded"; integration "R8.AC2: 0 and 2 prior runs"; integration "R8.AC3: other operations excluded"; integration "R8.AC4: history in API response"; integration "R8.AC5: failed runs excluded"; integration "R9.AC1: N this month + M last month → N"; integration "R9.AC2: other ops and failed runs not counted"; integration "R9.AC3: monthCount in API response"
+  - Depends on: T42, T43
+  - Done when: `INT` green.
+  - Commit: —
+
+- [ ] **T45 · History panel**
+  - Covers: R8.AC1, R8.AC2, R9.AC1 (UI) · Step S8
+  - Files: `client/src/components/HistoryPanel.jsx`, `HistoryPanel.test.jsx`, `CalculatorView.jsx` (renders it)
+  - Tests: component "R8.AC1: shows previous runs newest first"; component "R8.AC2: shows 'No previous runs' when empty"; component "R9.AC1: shows the monthly count"
+  - Depends on: T44
+  - Done when: `COMP` green.
+  - Commit: —
+
+## S9 · Server logs   (Could) · ~1 h
+
+- [ ] **T46 · Serilog and correlation id**
+  - Covers: foundation for R10/R11 · Step S9
+  - Files: `src/Gaia.Api/Logging/CorrelationIdMiddleware.cs`, `Program.cs` (Serilog), `appsettings.json` (two filtered file sinks)
+  - Tests: integration "T46: every response has an X-Correlation-Id header"
+  - Depends on: T45
+  - Done when: `INT` green; `logs/` files appear when running.
+  - Commit: —
+
+- [ ] **T47 · Error log**
+  - Covers: R10.AC1, R10.AC2 · Step S9
+  - Files: `src/Gaia.Api/Logging/ErrorLogging.cs` (exception handler), `ProblemDetailsMapper.cs`
+  - Tests: integration "R10.AC1: unhandled exception → error log entry with stack and correlation id; response has no stack"; integration "R10.AC2: 400/404/422 write no error-log entry"
+  - Depends on: T46
+  - Done when: `INT` green.
+  - Commit: —
+
+- [ ] **T48 · Request/response log**
+  - Covers: R11.AC1, R11.AC2, R13.AC7 · Step S9
+  - Files: `src/Gaia.Api/Logging/RequestResponseLoggingMiddleware.cs`
+  - Tests: integration "R11.AC1: one entry per request with method, path, bodies, status, duration"; integration "R11.AC2: same correlation id in request log and error log"; integration "R13.AC7: X-Management-Key logged as *** and the key text is in no sink"
+  - Depends on: T47
+  - Done when: `INT` green.
+  - Commit: —
+
+## S10 · E2E + README + submission   (Must) · ~1.5 h
+
+- [ ] **T49 · E2E: calculate** [P]
+  - Covers: R1.AC1, R2.AC1, R5.AC3 · Step S10
+  - Files: `client/e2e/calculate.spec.js`
+  - Tests: e2e "R5.AC3: 7 ÷ 2 shows 3.5"
+  - Depends on: T48
+  - Done when: `E2E` green.
+  - Commit: —
+
+- [ ] **T50 · E2E: error shown** [P]
+  - Covers: R5.AC4 · Step S10
+  - Files: `client/e2e/errors.spec.js`
+  - Tests: e2e "R5.AC4: 5 ÷ 0 shows the domain error and no result"
+  - Depends on: T48
+  - Done when: `E2E` green.
+  - Commit: —
+
+- [ ] **T51 · E2E: add a formula and use it** [P]
+  - Covers: R4.AC1, R12.AC3, R12.AC7, R13.AC4 · Step S10
+  - Files: `client/e2e/manage.spec.js`
+  - Tests: e2e "R12.AC3: unlock with key, add 'triple' = A * 3 + B, calculate it in the Calculator"
+  - Depends on: T48
+  - Done when: `E2E` green.
+  - Commit: —
+
+- [ ] **T52 · E2E: history panel** [P]
+  - Covers: R8.AC1 · Step S10
+  - Files: `client/e2e/history.spec.js`
+  - Tests: e2e "R8.AC1: second calculation shows the first in the history panel"
+  - Depends on: T48
+  - Done when: `E2E` green.
+  - Commit: —
+
+## S11 · CI   (Should) · ~0.5 h
+
+- [ ] **T53 · GitHub Actions workflow**
+  - Covers: quality signal · Step S11
+  - Files: `.github/workflows/ci.yml` (unit + component on push)
+  - Tests: workflow passes on GitHub after push
+  - Depends on: T52, T56 (repo exists)
+  - Done when: green run on GitHub.
+  - Commit: —
+
+## Review & verify (always last)
+
+- [ ] **T54 · Deep review**: `/code-review high`, `/simplify`, `/security-review` (formula input, management key). Fix the confirmed findings.
+- [ ] **T55 · Verify against the spec**: run `sdd-verify`.
+- [ ] **T56 · Polish & submit**: README (setup, run, test commands, formula language reference, interpretations A5/A8/A9, Security section, known limitations, trade-offs), no secrets beyond the documented dev key, clean history, Submission notes in plan.md, create the **private** GitHub repo and push (needs your OK), invite the reviewer.
