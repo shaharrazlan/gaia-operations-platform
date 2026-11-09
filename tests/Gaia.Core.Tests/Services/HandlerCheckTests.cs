@@ -28,6 +28,24 @@ public class HandlerCheckTests
     }
 
     [Fact]
+    public void T22_two_handlers_for_the_same_operation_fail_the_startup_check()
+    {
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            HandlerCheck.EnsureEveryCodeOperationHasAHandler([Op("weather", null)], [new Handler("weather"), new Handler("weather")]));
+
+        Assert.Contains("More than one handler", error.Message);
+    }
+
+    [Fact]
+    public void T22_a_deleted_code_operation_does_not_need_a_handler()
+    {
+        var retired = Op("rates", null);
+        retired.IsDeleted = true;
+
+        HandlerCheck.EnsureEveryCodeOperationHasAHandler([retired], []);
+    }
+
+    [Fact]
     public void T22_startup_check_passes_when_every_code_operation_has_a_handler()
     {
         HandlerCheck.EnsureEveryCodeOperationHasAHandler([Op("add", "A + B"), Op("weather", null)], [new Handler("weather")]);

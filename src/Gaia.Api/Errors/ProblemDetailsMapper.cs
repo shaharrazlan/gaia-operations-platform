@@ -13,8 +13,18 @@ namespace Gaia.Api.Errors;
 /// </summary>
 public sealed class ProblemDetailsMapper(IProblemDetailsService problemDetailsService) : IExceptionHandler
 {
+    /// <summary>Non-standard but widely used status for "the client went away before we answered".</summary>
+    public const int ClientClosedRequest = 499;
+
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
+        // The caller disconnected (closed the tab, timed out). Not a server fault: no error body, no 500.
+        if (exception is OperationCanceledException && httpContext.RequestAborted.IsCancellationRequested)
+        {
+            httpContext.Response.StatusCode = ClientClosedRequest;
+            return true;
+        }
+
         var problem = ToProblem(exception);
         httpContext.Response.StatusCode = problem.Status!.Value;
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext

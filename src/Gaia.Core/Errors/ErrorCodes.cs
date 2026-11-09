@@ -18,5 +18,8 @@ public static class ErrorCodes
     public const string ExternalService = "external_service_error";
     public const string ExternalServiceTimeout = "external_service_timeout";
     public const string DatabaseUnavailable = "database_unavailable";
+    public const string RouteNotFound = "route_not_found";
+    public const string MethodNotAllowed = "method_not_allowed";
+    public const string HttpError = "http_error";
     public const string Internal = "internal_error";
 }

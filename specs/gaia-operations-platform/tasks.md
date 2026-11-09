@@ -160,61 +160,64 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 ## S4 · Catalog + execute API, weather   (Must) · ~2 h
 
-- [ ] **T18 · OperationService (formula path)**
+- [x] **T18 · OperationService (formula path)**
   - Covers: R2.AC1, R2.AC2, R2.AC3 · Step S4
   - Files: `src/Gaia.Core/Services/OperationService.cs`, `IOperationHandler.cs`, `IRunRecorder.cs` (+ `NoOpRunRecorder`), `tests/…/OperationServiceTests.cs`
   - Tests: unit "R2.AC1: executes a formula operation and returns its result"; unit "R2.AC2: unknown or disabled id throws NotFound"; unit "R2.AC3: missing field A throws Validation with field 'fieldA'"
   - Depends on: T17
   - Done when: `UNIT` green.
-  - Commit: —
+  - Commit: 40de0e5
+  - Note: `IOperationHandler` lives in `Core/Operations`; `IRunRecorder`/`NoOpRunRecorder` deferred to S8 (would be unused code until then).
 
-- [ ] **T19 · Catalog endpoint**
+- [x] **T19 · Catalog endpoint**
   - Covers: R1.AC1, R1.AC2, R1.AC3 · Step S4
   - Files: `src/Gaia.Api/Controllers/OperationsController.cs` (GET), `src/Gaia.Api/Contracts/OperationDto.cs`, `Program.cs` (DI, EF, auto-migrate in Development/E2E)
   - Tests: integration "R1.AC1: GET /api/operations returns seeded ops with id, name, kind, labels"; integration "R1.AC2: disabled and deleted ops are absent"; integration "R1.AC3: all disabled returns [] with 200"
   - Depends on: T18
   - Done when: `INT` green.
-  - Commit: —
+  - Commit: 75bc25a
+  - Note: added `appsettings.json` connection string (LocalDB `GaiaDev`) and `appsettings.E2E.json` (`GaiaE2E`, recreated each E2E run).
 
-- [ ] **T20 · Execute endpoint and error mapping**
+- [x] **T20 · Execute endpoint and error mapping**
   - Covers: R2.AC1–6, R6.AC2 · Step S4
   - Files: `OperationsController.cs` (execute), `src/Gaia.Api/Contracts/ExecuteRequest.cs`, `ExecuteResponse.cs`, `src/Gaia.Api/Errors/ProblemDetailsMapper.cs`
   - Tests: integration "R2.AC1: POST execute divide 7,2 returns 3.5"; integration "R2.AC2: unknown id → 404 operation_not_found naming the id"; integration "R2.AC3: missing fieldA → 400 with field"; integration "R2.AC4: 'abc' for a Number op → 400 validation_error"; integration "R2.AC5: divide by zero → 422 domain_error"; integration "R2.AC6: each error kind has a distinct code" (table-driven); integration "R6.AC2: HTTP result equals OperationService result for the same inputs"; integration "T20: database down → 503 database_unavailable"
   - Depends on: T19
   - Done when: `INT` green.
-  - Commit: —
+  - Commit: c04100d
 
-- [ ] **T21 · Open-Meteo weather handler** [P]
+- [x] **T21 · Open-Meteo weather handler** [P]
   - Covers: R3.AC3, R3.AC4, NFR2 · Step S4
   - Files: `src/Gaia.Infrastructure/Weather/OpenMeteoWeatherHandler.cs`, `WeatherCodes.cs`, `FakeWeatherHandler.cs`, `tests/…/OpenMeteoWeatherHandlerTests.cs` (fake `HttpMessageHandler`)
   - Tests: unit "R3.AC3: maps Open-Meteo JSON to 'Partly cloudy, 12–21 °C'"; unit "R3.AC4: HTTP 500 → ExternalServiceException"; unit "R3.AC4: malformed JSON → ExternalServiceException"; unit "NFR2: no answer within 5 s → external_service_timeout"
   - Depends on: T18
   - Done when: `UNIT` green.
-  - Commit: —
+  - Commit: dde3461
 
-- [ ] **T22 · Weather wired into the API**
+- [x] **T22 · Weather wired into the API**
   - Covers: R3.AC3, R3.AC4 · Step S4
   - Files: `OperationService.cs` (handler lookup), `Program.cs` (`Weather:Provider` config, typed HttpClient, startup check that every system op without a formula has a handler)
   - Tests: integration "R3.AC3: execute weather 32.08,34.78 with stubbed HTTP returns forecast line"; integration "R3.AC4: stubbed provider failure → 502 external_service_error"; unit "T22: startup check fails fast when a handler is missing"
   - Depends on: T20, T21
   - Done when: `UNIT` and `INT` green.
-  - Commit: —
+  - Commit: 035c10b
 
-- [ ] **T23 · Swagger UI**
+- [x] **T23 · Swagger UI**
   - Covers: (enables R4.AC5) · Step S4
   - Files: `Program.cs` (Swashbuckle), `Gaia.Api.csproj`
   - Tests: integration "T23: /swagger/v1/swagger.json lists GET and execute"
   - Depends on: T22
   - Done when: `INT` green; `/swagger` loads in a browser.
-  - Commit: —
+  - Commit: bcf1d57
 
-- [ ] **T24 · A34D marker**
+- [x] **T24 · A34D marker**
   - Covers: NFR5, C4 · Step S4
   - Files: `src/Gaia.Api/Program.cs` (`// A34D` comment), `tests/Gaia.Core.Tests/MarkerTests.cs`
   - Tests: unit "NFR5: a '// A34D' comment exists under src/Gaia.Api"
   - Depends on: T23
   - Done when: `UNIT` green.
-  - Commit: —
+  - Commit: 1e4d6a1
+  - S4 review (applies to T18–T24): JSON numbers accepted for fields; framework 404/405 get codes; client cancellation → 499 (not 500); handler check runs in every environment, ignores deleted ops and catches duplicate handlers; E2E only deletes a database named GaiaE2E*; startup moved to `DatabaseStartup.cs`. Integration tests now run one class at a time (parallel CREATE DATABASE timed out LocalDB ~1 run in 4).
 
 ## S5 · React calculator   (Must) · ~1.5 h
 

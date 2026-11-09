@@ -20,7 +20,10 @@ public class GaiaApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     /// <summary>A context on this factory's database, for arranging data and checking results.</summary>
     public GaiaDbContext CreateDbContext() =>
-        new(new DbContextOptionsBuilder<GaiaDbContext>().UseSqlServer(ConnectionString).Options);
+        new(new DbContextOptionsBuilder<GaiaDbContext>()
+            // Creating or dropping a database can take longer than the default 30 s on a busy machine.
+            .UseSqlServer(ConnectionString, sql => sql.CommandTimeout(120))
+            .Options);
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {

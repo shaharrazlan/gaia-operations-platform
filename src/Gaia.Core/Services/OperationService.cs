@@ -13,8 +13,6 @@ public sealed record ExecutionResult(string OperationId, string? FieldA, string?
 /// </summary>
 public sealed class OperationService(IOperationRepository repository, IEnumerable<IOperationHandler> handlers)
 {
-    private readonly Dictionary<string, IOperationHandler> _handlers = handlers.ToDictionary(h => h.OperationId);
-
     public Task<IReadOnlyList<OperationDefinition>> ListAsync(CancellationToken cancellationToken = default) =>
         repository.ListAsync(includeDisabled: false, cancellationToken);
 
@@ -36,8 +34,9 @@ public sealed class OperationService(IOperationRepository repository, IEnumerabl
         CancellationToken cancellationToken)
     {
         // A code operation with no handler is a deployment bug, not a user error → 500.
-        if (!_handlers.TryGetValue(operation.Id, out var handler))
-            throw new InvalidOperationException($"No handler is registered for code operation '{operation.Id}'.");
+        // (Missing and duplicate handlers are also caught at startup by HandlerCheck.)
+        var handler = handlers.FirstOrDefault(h => h.OperationId == operation.Id)
+            ?? throw new InvalidOperationException($"No handler is registered for code operation '{operation.Id}'.");
 
         var (a, b) = InputParser.Parse(operation.InputType, fieldA, fieldB);
         return handler.ExecuteAsync(a, b, cancellationToken);

@@ -3,6 +3,7 @@
 // and builds the HTTP pipeline. Business logic lives in Gaia.Core; data and weather in Gaia.Infrastructure.
 
 using System.Text.Json.Serialization;
+using Gaia.Api;
 using Gaia.Api.Errors;
 using Gaia.Core.Errors;
 using Gaia.Core.Operations;
@@ -29,7 +30,7 @@ builder.Services.AddScoped<OperationService>();
 // Code operations (IOperationHandler). Today only weather: real Open-Meteo, or a fixed fake answer.
 var weather = builder.Configuration.GetSection("Weather").Get<WeatherOptions>() ?? new WeatherOptions();
 builder.Services.AddSingleton(weather);
-switch (weather.Provider.ToLowerInvariant())
+switch (weather.Provider?.ToLowerInvariant())
 {
     case "openmeteo":
         builder.Services.AddHttpClient<OpenMeteoWeatherHandler>(http => http.BaseAddress = new Uri(weather.BaseUrl));
@@ -48,9 +49,13 @@ builder.Services.AddControllers()
         // A body that isn't valid JSON gets the same shape and "code" as every other error (R2.AC6).
         api.InvalidModelStateResponseFactory = context =>
         {
-            var (field, errors) = context.ModelState.First(entry => entry.Value!.Errors.Count > 0);
+            // Prefer an error that points at a JSON field ("$.fieldA" → "fieldA") over the generic body error.
+            var field = context.ModelState
+                .Where(e => e.Value!.Errors.Count > 0 && e.Key.StartsWith("$.", StringComparison.Ordinal))
+                .Select(e => e.Key[2..])
+                .FirstOrDefault();
             var problem = ProblemDetailsMapper.Problem(StatusCodes.Status400BadRequest, "Invalid request",
-                errors!.Errors[0].ErrorMessage is { Length: > 0 } message ? message : "The request body is not valid JSON.",
+                field is null ? "The request body must be JSON like {\"fieldA\": \"7\", \"fieldB\": \"2\"}." : $"'{field}' must be text or a number.",
                 ErrorCodes.Validation, field);
             return new BadRequestObjectResult(problem) { ContentTypes = { "application/problem+json" } };
         });
@@ -69,30 +74,26 @@ builder.Services.AddSwaggerGen(swagger =>
 });
 
 // Every error becomes a ProblemDetails response with a "code" (see ProblemDetailsMapper).
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(problems => problems.CustomizeProblemDetails = context =>
+{
+    // Errors produced by the framework itself (unknown route, wrong HTTP method) get a code too.
+    if (!context.ProblemDetails.Extensions.ContainsKey("code"))
+        context.ProblemDetails.Extensions["code"] = context.ProblemDetails.Status switch
+        {
+            StatusCodes.Status404NotFound => ErrorCodes.RouteNotFound,
+            StatusCodes.Status405MethodNotAllowed => ErrorCodes.MethodNotAllowed,
+            _ => ErrorCodes.HttpError,
+        };
+});
 builder.Services.AddExceptionHandler<ProblemDetailsMapper>();
 
 var app = builder.Build();
 
-// --- Database ---
-// Development and E2E create/upgrade their own database, so nobody has to run database commands.
-// E2E starts from an empty database every run, so end-to-end tests are repeatable.
-if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("E2E"))
-{
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<GaiaDbContext>();
-    if (app.Environment.IsEnvironment("E2E"))
-        await db.Database.EnsureDeletedAsync();
-    await db.Database.MigrateAsync();
-
-    // Fail fast if an operation in the database has neither a formula nor a C# handler.
-    HandlerCheck.EnsureEveryCodeOperationHasAHandler(
-        await db.Operations.AsNoTracking().ToListAsync(),
-        scope.ServiceProvider.GetServices<IOperationHandler>());
-}
+await DatabaseStartup.PrepareAsync(app);
 
 // --- HTTP pipeline ---
 app.UseExceptionHandler();
+app.UseStatusCodePages();   // empty 404/405 responses become ProblemDetails
 app.UseSwagger();
 app.UseSwaggerUI();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));

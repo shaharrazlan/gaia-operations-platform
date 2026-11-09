@@ -17,6 +17,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Test classes run one at a time: each creates its own LocalDB database, and many
+         parallel CREATE DATABASE calls make LocalDB time out. -->
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Gaia.Api\Gaia.Api.csproj" />
   </ItemGroup>
 
