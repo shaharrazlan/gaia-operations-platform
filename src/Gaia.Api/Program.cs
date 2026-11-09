@@ -1,3 +1,7 @@
+// A34D
+// Gaia Operations Platform — server entry point: registers services, prepares the database,
+// and builds the HTTP pipeline. Business logic lives in Gaia.Core; data and weather in Gaia.Infrastructure.
+
 using System.Text.Json.Serialization;
 using Gaia.Api.Errors;
 using Gaia.Core.Errors;
