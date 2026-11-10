@@ -1,10 +1,12 @@
-using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Gaia.Api.Tests.Logging;
+using Microsoft.AspNetCore.TestHost;
+using Serilog.Core;
+using Serilog.Events;
 
 namespace Gaia.Api.Tests.Api;
 
@@ -107,13 +109,13 @@ public class NoManagementKeyTests : IClassFixture<NoManagementKeyTests.NoKeyFact
 
     public sealed class NoKeyFactory : GaiaApiFactory
     {
-        public ConcurrentQueue<(LogLevel Level, string Message)> Logs { get; } = new();
+        public ListSink Sink { get; } = new();
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             base.ConfigureWebHost(builder);
             builder.UseSetting("Management:Key", "");
-            builder.ConfigureServices(services => services.AddLogging(logging => logging.AddProvider(new ListLoggerProvider(Logs))));
+            builder.ConfigureTestServices(services => services.AddSingleton<ILogEventSink>(Sink));
         }
     }
 
@@ -133,26 +135,6 @@ public class NoManagementKeyTests : IClassFixture<NoManagementKeyTests.NoKeyFact
     {
         _factory.CreateClient(); // starts the server
 
-        Assert.Contains(_factory.Logs, log => log.Level == LogLevel.Warning && log.Message.Contains("Management:Key"));
-    }
-}
-
-/// <summary>Collects log messages in memory so tests can check them.</summary>
-public sealed class ListLoggerProvider(ConcurrentQueue<(LogLevel Level, string Message)> logs) : ILoggerProvider
-{
-    public ILogger CreateLogger(string categoryName) => new ListLogger(logs);
-
-    public void Dispose()
-    {
-    }
-
-    private sealed class ListLogger(ConcurrentQueue<(LogLevel Level, string Message)> logs) : ILogger
-    {
-        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-
-        public bool IsEnabled(LogLevel logLevel) => true;
-
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
-            Func<TState, Exception?, string> formatter) => logs.Enqueue((logLevel, formatter(state, exception)));
+        Assert.Contains(_factory.Sink.Events, e => e.Level == LogEventLevel.Warning && e.RenderMessage().Contains("Management:Key"));
     }
 }

@@ -429,13 +429,14 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 ## S9 · Server logs   (Could) · ~1 h
 
-- [ ] **T46 · Serilog and correlation id**
+- [x] **T46 · Serilog and correlation id**
   - Covers: foundation for R10/R11 · Step S9
   - Files: `src/Gaia.Api/Logging/CorrelationIdMiddleware.cs`, `Program.cs` (Serilog), `appsettings.json` (two filtered file sinks)
   - Tests: integration "T46: every response has an X-Correlation-Id header"
   - Depends on: T45
   - Done when: `INT` green; `logs/` files appear when running.
-  - Commit: —
+  - Commit: (T46)
+  - Notes: the two filtered file outputs are set up in code (`Logging/LogSetup.cs`: errors = Error and above, requests = lines from the request middleware) rather than in appsettings, so the filter rules are readable C# and the tests reuse the same predicates; appsettings keeps only the levels (`Serilog` section) and `LogFiles:Directory` (empty in tests = no files). A caller-sent `X-Correlation-Id` is kept if it is plain (letters, digits, - and _, up to 64), otherwise replaced. Error bodies now carry `correlationId` too (the plan's contract). The R13.AC8 startup-warning test now reads the Serilog in-memory sink (Serilog replaces .NET's logger). Package: Serilog.AspNetCore 10.0.0 (no known vulnerabilities).
 
 - [ ] **T47 · Error log**
   - Covers: R10.AC1, R10.AC2 · Step S9

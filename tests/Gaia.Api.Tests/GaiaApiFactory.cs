@@ -34,6 +34,7 @@ public class GaiaApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:Gaia", ConnectionString);
         builder.UseSetting("Management:Key", ManagementKey);
+        builder.UseSetting("LogFiles:Directory", "");   // no log files from tests; LoggingFactory reads logs in memory
     }
 
     /// <summary>A client that sends the management key, for add / change / delete and the full list.</summary>

@@ -5,6 +5,7 @@
 using System.Text.Json.Serialization;
 using Gaia.Api;
 using Gaia.Api.Errors;
+using Gaia.Api.Logging;
 using Gaia.Api.Security;
 using Gaia.Core.Errors;
 using Gaia.Core.History;
@@ -17,8 +18,12 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Logging: Serilog, writing the error log and the request/response log (see LogSetup).
+builder.Services.AddSerilog((services, logger) => LogSetup.Configure(logger, builder.Configuration, services));
 
 // --- Services ---
 builder.Services.AddDbContext<GaiaDbContext>((services, options) =>
@@ -69,6 +74,7 @@ builder.Services.AddControllers()
             var problem = ProblemDetailsMapper.Problem(StatusCodes.Status400BadRequest, "Invalid request",
                 field is null ? "The request body must be valid JSON (see /swagger for examples)." : $"'{field}' has a value of the wrong type or an unknown value.",
                 ErrorCodes.Validation, field);
+            ProblemDetailsMapper.AddCorrelationId(problem, context.HttpContext);
             return new BadRequestObjectResult(problem) { ContentTypes = { "application/problem+json" } };
         });
 
@@ -106,6 +112,7 @@ builder.Services.AddProblemDetails(problems => problems.CustomizeProblemDetails 
             StatusCodes.Status405MethodNotAllowed => ErrorCodes.MethodNotAllowed,
             _ => ErrorCodes.HttpError,
         };
+    ProblemDetailsMapper.AddCorrelationId(context.ProblemDetails, context.HttpContext);
 });
 builder.Services.AddExceptionHandler<ProblemDetailsMapper>();
 
@@ -118,7 +125,9 @@ if (!app.Services.GetRequiredService<IOptions<ManagementKeyOptions>>().Value.IsC
     app.Logger.LogWarning("No management key is configured (Management:Key), so adding, changing and removing operations is disabled. " +
         "Set the environment variable Management__Key to enable it.");
 
-// --- HTTP pipeline ---
+// --- HTTP pipeline (order matters: outer first) ---
+app.UseMiddleware<CorrelationIdMiddleware>();            // id for this request, on every log line and in the response
+app.UseMiddleware<RequestResponseLoggingMiddleware>();   // sees the final response, including error responses below
 app.UseExceptionHandler();
 app.UseStatusCodePages();   // empty 404/405 responses become ProblemDetails
 app.UseSwagger();

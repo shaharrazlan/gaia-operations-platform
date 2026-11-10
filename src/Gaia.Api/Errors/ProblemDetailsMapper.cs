@@ -64,6 +64,10 @@ public sealed class ProblemDetailsMapper(IProblemDetailsService problemDetailsSe
         return Problem(status, title, detail, code, (exception as GaiaException)?.Field);
     }
 
+    /// <summary>Puts the request's id (also in the X-Correlation-Id header) in the error body, to quote when reporting a problem.</summary>
+    public static void AddCorrelationId(ProblemDetails problem, HttpContext httpContext) =>
+        problem.Extensions["correlationId"] = httpContext.TraceIdentifier;
+
     public static ProblemDetails Problem(int status, string title, string detail, string code, string? field = null)
     {
         var problem = new ProblemDetails { Status = status, Title = title, Detail = detail };
