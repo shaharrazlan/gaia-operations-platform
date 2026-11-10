@@ -385,16 +385,17 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: integration "T41: migration creates OperationRuns with index"
   - Depends on: T40
   - Done when: `INT` green.
-  - Commit: (T41)
+  - Commit: 265f09c
   - Note: the entity is `Core/History/OperationRun.cs` (the plan's data-model name) instead of `RunRecord.cs`; `OperationRunEntityConfig.cs` holds the table shape (same pattern as Operations). Also a test that a run must point at an existing operation (foreign key). `IRunRepository` reads by "latest successful except this run" and "count successful since".
 
-- [ ] **T42 · Israel month boundary** [P]
+- [x] **T42 · Israel month boundary** [P]
   - Covers: R9.AC4 · Step S8
   - Files: `src/Gaia.Core/History/IsraelMonth.cs`, `tests/…/IsraelMonthTests.cs`
   - Tests: unit "R9.AC4: 1st 00:30 Israel time belongs to the new month (winter, UTC+2)"; unit "R9.AC4: same in summer (UTC+3)"
   - Depends on: T40
   - Done when: `UNIT` green.
-  - Commit: —
+  - Commit: (T42)
+  - Also: a test that the offset of the 1st is used, not today's (1 Oct 2026 was summer time, 30 Oct winter time); `StartUtc(DateTime)` plus a `TimeProvider` overload.
 
 - [ ] **T43 · Record every run**
   - Covers: R7.AC1, R7.AC2, R7.AC3 · Step S8
