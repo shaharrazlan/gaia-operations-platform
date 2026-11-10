@@ -297,13 +297,14 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 ## S7 · Manage operations view   (Should) · ~1.75 h
 
-- [ ] **T33 · View switch**
+- [x] **T33 · View switch**
   - Covers: R12.AC1, R12.AC7 · Step S7
   - Files: `client/src/App.jsx`, `client/src/App.test.jsx`, `client/src/views/ManageView.jsx` (placeholder)
   - Tests: component "R12.AC1: top bar switches Calculator ↔ Manage operations"; component "R12.AC7: returning to Calculator re-fetches operations"
   - Depends on: T27
   - Done when: `COMP` green.
-  - Commit: —
+  - Commit: see git log "T33:" (hash recorded in the T34 commit)
+  - Also: `styles.css` (top-bar styling). Only the visible view is mounted, so R12.AC7 needs no extra code.
 
 - [ ] **T34 · Operations table**
   - Covers: R12.AC2, R12.AC5 · Step S7

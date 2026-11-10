@@ -153,3 +153,15 @@ button:disabled {
   font-weight: 600;
   overflow-wrap: anywhere;
 }
+
+/* Top bar: Calculator | Manage operations (R12.AC1). The current view is filled, the other outlined. */
+.views {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.views button[aria-pressed='false'] {
+  background: transparent;
+  color: var(--accent);
+}
