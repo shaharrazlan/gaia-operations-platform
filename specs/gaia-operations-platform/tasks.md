@@ -413,16 +413,17 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: integration "R8.AC1: 4 prior runs → 3 newest prior, current excluded"; integration "R8.AC2: 0 and 2 prior runs"; integration "R8.AC3: other operations excluded"; integration "R8.AC4: history in API response"; integration "R8.AC5: failed runs excluded"; integration "R9.AC1: N this month + M last month → N"; integration "R9.AC2: other ops and failed runs not counted"; integration "R9.AC3: monthCount in API response"
   - Depends on: T42, T43
   - Done when: `INT` green.
-  - Commit: (T44)
+  - Commit: 67b0743
   - Note: no separate `HistoryService` — reading history lives in `RunRecorder.RecordSuccessAsync` next to storing, so the one rule "history failure: log it, still return the result" is in one place. Integration tests run on a fixed clock (15 Nov 2026) via `FixedClockFactory`; the month boundary is tested with a run at 31 Oct 23:59 vs 1 Nov 00:00 Israel time. R7.AC2 (a new server on the same database sees earlier runs) is tested here. Unit test: a failing history read returns the result with `history: null` and logs an error. The red step was implicit: the response had no `history` field before.
 
-- [ ] **T45 · History panel**
+- [x] **T45 · History panel**
   - Covers: R8.AC1, R8.AC2, R9.AC1 (UI) · Step S8
   - Files: `client/src/components/HistoryPanel.jsx`, `HistoryPanel.test.jsx`, `CalculatorView.jsx` (renders it)
   - Tests: component "R8.AC1: shows previous runs newest first"; component "R8.AC2: shows 'No previous runs' when empty"; component "R9.AC1: shows the monthly count"
   - Depends on: T44
   - Done when: `COMP` green.
-  - Commit: —
+  - Commit: (T45)
+  - Also: the table uses the operation's own Field A/B labels; times shown in Israel time (A7); "once" for a count of 1; `history: null` shows "History is not available right now." (R7.AC3); the panel keeps the operation of the run that produced it. Calculator tests: history shown after Calculate, and hidden after an error. `styles.css`.
 
 ## S9 · Server logs   (Could) · ~1 h
 

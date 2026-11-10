@@ -135,6 +135,31 @@ describe('CalculatorView — calculate', () => {
     expect(fieldA).not.toHaveAttribute('aria-invalid', 'true')
   })
 
+  it('R8.AC1: after Calculate the history from the server is shown under the result', async () => {
+    const history = { previousRuns: [{ fieldA: '1', fieldB: '1', result: '2', createdAtUtc: '2026-11-15T10:00:00Z' }], monthCount: 2 }
+    renderCalculator(createFakeApi({ execute: vi.fn().mockResolvedValue({ result: '5', history }) }))
+
+    await calculate('2', '3')
+
+    expect(await screen.findByRole('table', { name: 'Previous runs of Add' })).toBeInTheDocument()
+    expect(screen.getByText(/Add ran 2 times this month/)).toBeInTheDocument()
+  })
+
+  it('R8.AC1: an error hides the history of the previous result', async () => {
+    const execute = vi
+      .fn()
+      .mockResolvedValueOnce({ result: '5', history: { previousRuns: [], monthCount: 1 } })
+      .mockRejectedValueOnce(new ApiError({ status: 422, code: 'domain_error', detail: 'Division by zero.' }))
+    renderCalculator(createFakeApi({ execute }))
+    await calculate('2', '3')
+    await screen.findByText(/ran once this month/)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Calculate' }))
+
+    await screen.findByRole('alert')
+    expect(screen.queryByText(/this month/)).not.toBeInTheDocument()
+  })
+
   it('T27: the button is disabled while waiting for the server', async () => {
     let finish
     const execute = vi.fn(() => new Promise((resolve) => (finish = resolve)))

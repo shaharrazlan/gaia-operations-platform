@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useApi } from '../api/ApiContext.jsx'
+import HistoryPanel from '../components/HistoryPanel.jsx'
 
 /**
  * The end-user screen: Field A, operation, Field B, Calculate (R5).
@@ -57,7 +58,7 @@ export default function CalculatorView() {
     setOutcome(null) // never show an old result next to a new error
     try {
       const response = await api.execute(operation.id, fieldA, fieldB)
-      setOutcome({ result: response.result })
+      setOutcome({ result: response.result, history: response.history ?? null, operation })
     } catch (error) {
       setOutcome({ error: error.message, field: error.field ?? null })
     } finally {
@@ -120,6 +121,9 @@ export default function CalculatorView() {
           <span className="result-value">{outcome.result}</span>
         </output>
       )}
+
+      {/* The history belongs to the run that produced this result, so it uses that run's operation. */}
+      {outcome?.result !== undefined && <HistoryPanel operation={outcome.operation} history={outcome.history} />}
     </form>
   )
 }

@@ -307,3 +307,36 @@ select:disabled {
   font-size: 0.875rem;
   color: var(--muted);
 }
+
+/* History under a result (R8, R9). */
+.history {
+  margin-top: 16px;
+}
+
+.month-count {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.history-note {
+  color: var(--muted);
+  margin: 8px 0 0;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.history-table th,
+.history-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.history-table th {
+  color: var(--muted);
+  font-weight: 600;
+}
