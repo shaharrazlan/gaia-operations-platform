@@ -362,17 +362,18 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: component "R13.AC4: wrong key shows 'Invalid management key' and stays locked"; component "R13.AC4: right key unlocks the view"; component "R13.AC5: key kept in sessionStorage; Lock clears it"
   - Depends on: T38
   - Done when: `COMP` green.
-  - Commit: (T39)
+  - Commit: 9da85cb
   - Also: `httpApi.withManagementKey(key)` returns the same API with the header on every call (the plain API never sends it); `fakeApi` gets `withManagementKey`; `App.jsx` wraps the Manage view; `styles.css`. The key is checked by the server (full-list call), never compared in the browser.
   - Review: a remembered key the server later rejects (401) now locks the gate and asks again, instead of leaving an "unlocked" view whose calls all fail.
 
-- [ ] **T40 · Key-not-shipped check**
+- [x] **T40 · Key-not-shipped check**
   - Covers: R13.AC6 · Step S12
   - Files: `client/src/security.test.js`
   - Tests: component "R13.AC6: the dev key from appsettings.Development.json appears nowhere in client/src or client/dist"
   - Depends on: T39
   - Done when: `COMP` green (after `npm --prefix client run build`).
-  - Commit: —
+  - Commit: (T40)
+  - Also: reads every `Management:Key` from `src/Gaia.Api/appsettings*.json` (dev and E2E) and scans `client/src` and `client/dist`; `KeyGate.test.jsx` now uses a made-up key (it had the real dev value); `scripts/test-all.ps1` builds the client before the component tests so the dist scan always runs there (a plain `npm test` without a build skips that one case and reports it as skipped).
 
 ## S8 · History, last 3, monthly count   (Could) · ~1.75 h
 

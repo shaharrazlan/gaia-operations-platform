@@ -55,32 +55,32 @@ describe('KeyGate', () => {
   it('R13.AC4: the right key unlocks the view, which then uses an API that sends the key', async () => {
     const { api, scoped } = renderGate()
 
-    await enterKey('gaia-dev-key')
+    await enterKey('right-key')
 
     expect(await screen.findByText('Protected area for keyed api')).toBeInTheDocument()
-    expect(api.withManagementKey).toHaveBeenCalledWith('gaia-dev-key')
+    expect(api.withManagementKey).toHaveBeenCalledWith('right-key')
     expect(scoped.getOperations).toHaveBeenCalledWith({ includeDisabled: true })
   })
 
   it('T39: a server that cannot be reached is reported as such, not as a wrong key', async () => {
     renderGate({ getOperations: vi.fn().mockRejectedValue(new ServiceUnavailableError()) })
 
-    await enterKey('gaia-dev-key')
+    await enterKey('right-key')
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Service unavailable/)
   })
 
   it('R13.AC5: the key is kept for this tab only (sessionStorage), so the view opens unlocked again', async () => {
     renderGate()
-    await enterKey('gaia-dev-key')
+    await enterKey('right-key')
     await screen.findByText(/Protected area/)
 
-    expect(sessionStorage.getItem(KEY_STORAGE)).toBe('gaia-dev-key')
+    expect(sessionStorage.getItem(KEY_STORAGE)).toBe('right-key')
     expect(localStorage.getItem(KEY_STORAGE)).toBeNull()
   })
 
   it('R13.AC5: a key already kept in this tab opens the view without asking', () => {
-    sessionStorage.setItem(KEY_STORAGE, 'gaia-dev-key')
+    sessionStorage.setItem(KEY_STORAGE, 'right-key')
 
     renderGate()
 
@@ -110,7 +110,7 @@ describe('KeyGate', () => {
   })
 
   it('R13.AC5: Lock forgets the key and asks for it again', async () => {
-    sessionStorage.setItem(KEY_STORAGE, 'gaia-dev-key')
+    sessionStorage.setItem(KEY_STORAGE, 'right-key')
     renderGate()
 
     await userEvent.click(screen.getByRole('button', { name: 'Lock' }))

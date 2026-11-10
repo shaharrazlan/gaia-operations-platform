@@ -6,6 +6,8 @@ $root = Split-Path -Parent $PSScriptRoot
 $steps = @(
     @{ Name = 'Unit (server)';        Command = { dotnet test (Join-Path $root 'tests/Gaia.Core.Tests') } },
     @{ Name = 'Integration (server)'; Command = { dotnet test (Join-Path $root 'tests/Gaia.Api.Tests') } },
+    # Build first: the component run also scans the build output for leaked keys (R13.AC6).
+    @{ Name = 'Client build';         Command = { npm --prefix (Join-Path $root 'client') run build } },
     @{ Name = 'Component (client)';   Command = { npm --prefix (Join-Path $root 'client') test -- --run } },
     @{ Name = 'E2E';                  Command = { npm --prefix (Join-Path $root 'client') run e2e } }
 )
