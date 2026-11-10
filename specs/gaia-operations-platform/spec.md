@@ -81,6 +81,8 @@ An operator can add, change and remove operations at runtime, with no code chang
 - **R4.AC5 (through the API):** Add, change and remove are all available as API calls, and the API's built-in documentation page lets a reviewer try them from a browser without writing a client.
 - **R4.AC6 (built-ins):** A built-in operation can be renamed or disabled through the API; a request to change its logic is rejected with an error saying built-in logic can't be changed.
 - **R4.AC7 (concurrent edits):** Given two clients loaded the same version of an operation, when the first saves a change and the second then saves its own change, the second save is rejected with a conflict error ("changed by someone else, reload"), and the operation keeps the first client's values. A save based on the current version succeeds.
+- **R4.AC8 (types checked when saved):** When an operator saves a formula whose parts can't work with the operation's input type — e.g. `A ^ B` with input type Text, `upper(A)` or `A + "kg"` with input type Number, comparing a number with a text, using a true/false value in arithmetic, or an `if` whose condition isn't true/false — the save is rejected (`formula_invalid`) with a plain-language message that names the part and, when A or B is involved, says which input type to choose; the catalog is unchanged. This also applies when only the input type of an existing formula is changed. (A11)
+- **R4.AC9 (always fails):** When a formula contains a fixed part that can never produce a result — dividing by a fixed 0 (`A / 0`), a fixed calculation that always errors (`sqrt(-1)`), `round` with fixed digits outside 0–15, or `count`/`replace` with a fixed empty search text — the save is rejected (`formula_invalid`) with a message saying why.
 
 ### R5 · End-user UI   (Must)  [1.2.2, 2.2.2]
 A minimal UI where the user enters Field A, selects an operation, enters Field B, presses Calculate and sees the result.
@@ -107,6 +109,7 @@ The UI has a second view, separate from the calculator but in the same app, wher
 - **R12.AC5 (disable/enable):** When the operator disables an operation it is shown as disabled in the list; enabling it again restores it.
 - **R12.AC6 (invalid):** When the server rejects a definition (R4.AC4), the form shows the server's error message next to the form and keeps what the operator typed.
 - **R12.AC7 (live):** After adding, changing or disabling an operation, returning to the calculator shows the updated operation list without a page reload or server restart.
+- **R12.AC9 (field help):** The add/edit form explains its fields in one line each: that Kind is only a category for the list, what each input type accepts (Number, Text, Coordinate), and that the Field A/B labels are the names shown above the Calculator's input boxes (e.g. "Base"), not values.
 - **R12.AC8 (conflict):** When a save is rejected because someone else changed the operation first (R4.AC7), the form shows "This operation was changed by someone else. Reload to see the latest version.", keeps what the operator typed, and offers a Reload action that loads the latest version.
 
 ### R13 · Management key   (Should)  [not in the assignment; user decision 2026-11-09]
@@ -178,6 +181,7 @@ The server writes a log of every API request and its response.
 | A8 | "Same type" in Part B: same operation or same kind? | Same **operation** (e.g. "divide"), not the same kind (arithmetic). | "פעולות מאותו סוג" most naturally reads as the chosen operation; "last 3 arithmetic" would be a mixed, less useful list. The README states this interpretation. | ✔ Confirmed 2026-11-09 |
 | A9 | Do failed runs count in history? | Failed runs (validation/domain/external errors) are stored with their error, but R8 and R9 show/count **successful runs only**. | History is "every operation and its results"; the user-facing stats are about results. | ✔ Confirmed 2026-11-09 |
 | A10 | UI language. | English, button labelled "Calculate". | Part B calls the button "CALCULATE". | ✔ Confirmed 2026-11-09 |
+| A11 | Which formula mistakes are caught when saving, and which only when running? | Saving checks every part's type against the input type (R4.AC8) and fixed parts that always fail (R4.AC9). Allowed on purpose and left to run time: `if` branches of different types (`if(A > B, A, "none")`), true/false as a result (`A > B`), formulas that ignore A or B, and a Kind that doesn't match the input type (Kind is only a category). Errors that depend on the values typed (÷ by B = 0) can only be found at run time. | A definition that can never work shouldn't reach the Calculator user, who can't fix it; anything that may work for some inputs stays allowed. | ✔ Confirmed 2026-11-10 |
 
 ## Open questions
 | # | Question | For whom | What it blocks |
@@ -207,3 +211,4 @@ The server writes a log of every API request and its response.
 | 2026-11-09 | Spec re-approved | User approval in conversation |
 | 2026-11-09 | Added R13 (Should): management key for add/change/remove; A6 changed; Operator actor reworded; status back to Draft | User decision — destructive endpoints shouldn't be open; a per-call token would have to live in public browser JS |
 | 2026-11-09 | Spec re-approved with R13 | User approval in conversation |
+| 2026-11-10 | Added R4.AC8 (type check on save), R4.AC9 (always-failing fixed parts), R12.AC9 (form field help), A11 | User testing: `A ^ B` saved with input type Text could never run, and failed only in the Calculator with a technical message; user approved the save-time check ("go ahead and think of more cases like this") |

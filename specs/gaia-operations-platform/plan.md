@@ -76,6 +76,14 @@ flowchart LR
 - Literals: `12`, `3.5`, `"text"`. Operators by precedence: `( )` · unary `-` · `^` (right-assoc) · `* / %` · `+ -` · `== != < <= > >=`. `+` adds two numbers or concatenates two texts; mixing → type error.
 - Whitelisted functions: `sqrt abs round(x[,digits]) min max floor ceil` · `upper lower len trim concat replace(s, find, with) contains(s, part) count(s, part)` · `if(cond, then, else)`.
 - Anything else — unknown identifier, function, wrong arity — is a **parse error at save time** (R4.AC4) with position: `Unknown function 'File' at position 1`.
+- **Type check at save time (S13, R4.AC8):** `FormulaEngine.Validate(formula, inputType)` runs `TypeChecker` over the tree.
+  - **Types:** Number / Text / Bool / Any. `A` and `B` take their type from the input type (Number and Coordinate → Number). Each operator and whitelisted function has a fixed signature. `if` needs a Bool condition, and its result is Any when its branches differ.
+  - **Rejections:** a mismatch is `formula_invalid` with a plain message naming the operator or function and its position. When A or B is involved, the message adds which input type makes them that type.
+  - **Run time:** Any-typed values are still checked when the formula runs.
+- **Always-fails check (S13, R4.AC9):** `ConstantCheck` evaluates every maximal fixed subtree (no A/B) at save time; a DomainException becomes `formula_invalid`. It also rejects:
+  - `/` or `%` by a fixed 0;
+  - `round` with fixed digits outside 0–15;
+  - `count`/`replace` with a fixed empty search text.
 - Runtime **domain errors**: division or modulo by zero, a NaN/∞ result, a type mismatch. Numbers are formatted with `G15`, invariant culture (so `0.1 + 0.2` → `0.3`).
 - Limits: formula ≤ 500 chars, parse depth ≤ 50 (no stack overflow from `((((…`).
 
@@ -166,6 +174,8 @@ Test names start with the AC id, e.g. `R2_AC5_divide_by_zero_returns_domain_erro
 | R4.AC5 | | ✔ Swagger JSON lists POST/PUT/DELETE | | |
 | R4.AC6 | ✔ CatalogService rules | ✔ PUT formula on `divide` or `weather` → 400 `system_logic_readonly`; rename + disable succeed | | |
 | R4.AC7 | | ✔ two PUTs with the same `version` → first 200, second 409 `edit_conflict`; DB holds first values; PUT with fresh version → 200 | | real SQL Server rowversion |
+| R4.AC8 | ✔ TypeChecker table: each mismatch kind rejected with a plain message; valid mixes (concat, len, if with mixed branches) accepted; seeded formulas pass with their input type | ✔ POST `A ^ B` Text → 400 `formula_invalid`, catalog unchanged; PUT changing only the input type → 400 | | S13 |
+| R4.AC9 | ✔ ConstantCheck: `A / 0`, `A % (2 - 2)`, `sqrt(-1)`, `round(A, 20)`, `count(A, "")`, `replace(A, "", "x")` rejected; `A / B`, `if(B == 0, 0, A / B)` accepted | | | S13 |
 | R5.AC1 | | | Component: select options = fake catalog | |
 | R5.AC2 | | | Component: labels change on select | |
 | R5.AC3 | | | Component + E2E | |
@@ -181,6 +191,7 @@ Test names start with the AC id, e.g. `R2_AC5_divide_by_zero_returns_domain_erro
 | R12.AC6 | | | Component: 400 `formula_invalid` → message + inputs kept | |
 | R12.AC7 | | | Component: catalog re-fetched on return; E2E | |
 | R12.AC8 | | | Component: 409 `edit_conflict` → message + inputs kept; Reload re-fetches the op | |
+| R12.AC9 | | | Component: hints for Kind, Input type and labels are shown in the form | S13 |
 | R13.AC1 | | ✔ POST/PUT/DELETE with no key and wrong key → 401 `unauthorized`; catalog unchanged | | |
 | R13.AC2 | | ✔ same calls with the key → as R4 (all R4 integration tests send the key) | | |
 | R13.AC3 | | ✔ GET (enabled) and execute succeed without a key | | |
@@ -304,6 +315,14 @@ Integration tests create a uniquely named LocalDB database per test class (`Gaia
 - **Delivers:** nothing in the spec; quality signal
 - **Files owned:** `.github/workflows/ci.yml` — unit + component tests on push (integration/E2E stay local because they need SQL Server).
 
+### S13 · Formula checks on save + form help   (Should) · ~1.5 h — added 2026-11-10 after user testing
+- **Delivers:** R4.AC8, R4.AC9, R12.AC9
+- **Depends on:** S2, S6, S7
+- **Files owned:**
+  - New: `src/Gaia.Core/Formulas/TypeChecker.cs`, `src/Gaia.Core/Formulas/ConstantCheck.cs`, `src/Gaia.Core/Formulas/OperatorRules.cs` (operator signatures and wording shared with the Evaluator).
+  - Changed: `FormulaEngine.Validate` (now takes the input type), `CatalogService.CheckFormula`, the Evaluator's run-time message, `OperationForm.jsx` (hints) and `styles.css`.
+- **Done when:** the R4.AC8/AC9 unit and integration tests and the R12.AC9 component test pass; all levels green; README formula section updated.
+
 **Budget:** Must S1–S5 + S10 = **9.25 h** · + Should S6, S7, S12, S11 = **14.25 h** · + Could S8–S9 = **17.25 h**. That's ~1.25 h over the original 12–16 h budget (C11); **the user accepted 17.25 h with everything in, CI included (2026-11-09).** Build order: S1→S5, S6, S7, S12, S8, S9, S10, S11.
 
 ## Traceability
@@ -312,10 +331,10 @@ Integration tests create a uniquely named LocalDB database per test class (`Gaia
 | R1 | S4 (S6 adds `includeDisabled`) | Integration, E2E |
 | R2 | S2, S4 | Unit, Integration, E2E |
 | R3 | S2 (formulas), S4 (weather) | Unit, Integration |
-| R4 | S6 (S2 for the parser) | Unit, Integration, E2E |
+| R4 | S6 (S2 for the parser; S13 for AC8–AC9) | Unit, Integration, E2E |
 | R5 | S5 | Component, E2E |
 | R6 | S5, S4 | Component, Integration |
-| R12 | S7 | Component, E2E |
+| R12 | S7 (S13 for AC9) | Component, E2E |
 | R13 | S12 (AC7 in S9) | Unit, Integration, Component, E2E |
 | R7 | S8 | Unit, Integration |
 | R8 | S8 | Integration, Component, E2E |

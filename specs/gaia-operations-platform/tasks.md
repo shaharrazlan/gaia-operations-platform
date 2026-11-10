@@ -569,6 +569,48 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Commit: 526d846
   - Note: red shown with a temporary mutation (delete also removing the runs → expected 2, got 0), then reverted.
 
+## S13 · Formula checks on save + form help   (Should) · ~1.5 h — added 2026-11-10 after user testing
+
+- [ ] **T62 · Type check on save (TypeChecker)**
+  - Covers: R4.AC8 · Step S13
+  - Files: `src/Gaia.Core/Formulas/TypeChecker.cs`, `src/Gaia.Core/Formulas/OperatorRules.cs`, `src/Gaia.Core/Formulas/FormulaEngine.cs`, `src/Gaia.Core/Formulas/Evaluator.cs` (message), `src/Gaia.Core/Services/CatalogService.cs`, `tests/Gaia.Core.Tests/Formulas/TypeCheckerTests.cs`, `tests/Gaia.Core.Tests/Formulas/FormulaEngineTests.cs`, `tests/Gaia.Core.Tests/Operations/SeedOperationsTests.cs`, `tests/Gaia.Core.Tests/Services/CatalogServiceTests.cs`
+  - Tests: unit "R4.AC8: <case> is rejected" (table), "R4.AC8: <case> is accepted" (table), "R4.AC8: seeded formulas pass with their input type", "R4.AC8: changing only the input type is checked"
+  - Depends on: —
+  - Done when: tests pass; `dotnet test tests/Gaia.Core.Tests` green.
+  - Commit: —
+
+- [ ] **T63 · Always-fails check (ConstantCheck)**
+  - Covers: R4.AC9 · Step S13
+  - Files: `src/Gaia.Core/Formulas/ConstantCheck.cs`, `src/Gaia.Core/Formulas/FormulaEngine.cs`, `tests/Gaia.Core.Tests/Formulas/ConstantCheckTests.cs`
+  - Tests: unit "R4.AC9: <case> is rejected" (table), "R4.AC9: <case> is accepted" (table)
+  - Depends on: T62
+  - Done when: tests pass; unit suite green.
+  - Commit: —
+
+- [ ] **T64 · Integration: the API refuses formulas that can't work**
+  - Covers: R4.AC8, R4.AC9 · Step S13
+  - Files: `tests/Gaia.Api.Tests/Api/ManagementTests.cs`
+  - Tests: integration "R4_AC8_POST_A_power_B_with_text_input_is_400_and_the_catalog_is_unchanged", "R4_AC8_PUT_changing_only_the_input_type_to_text_is_400", "R4_AC9_POST_dividing_by_a_fixed_zero_is_400"
+  - Depends on: T63
+  - Done when: tests pass; integration suite green.
+  - Commit: —
+
+- [ ] **T65 · Form field help**
+  - Covers: R12.AC9 · Step S13
+  - Files: `client/src/components/OperationForm.jsx`, `client/src/styles.css`, `client/src/components/OperationForm.test.jsx`
+  - Tests: component "R12.AC9: the form explains Kind, Input type and the labels"
+  - Depends on: —
+  - Done when: test passes; component suite and lint green.
+  - Commit: —
+
+- [ ] **T66 · S13 review, all levels, README**
+  - Covers: S13 · Step S13
+  - Files: `README.md` (formula section, examples), fixes from the review
+  - Tests: every level green (`scripts/test-all.ps1`); CI green after push
+  - Depends on: T62–T65
+  - Done when: review findings fixed; pushed; CI green.
+  - Commit: —
+
 ## Submit (always last)
 
 - [x] **T56 · Polish & submit**: README (setup, run, test commands, formula language reference, interpretations A5/A8/A9, Security section, known limitations, trade-offs), no secrets beyond the documented dev key, clean history, Submission notes in plan.md, create the **private** GitHub repo and push (needs your OK), invite the reviewer.
