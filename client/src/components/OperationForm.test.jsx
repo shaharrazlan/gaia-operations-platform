@@ -200,3 +200,18 @@ describe('OperationForm — edit', () => {
     expect(api.updateOperation).toHaveBeenLastCalledWith('average', expect.objectContaining({ version: 'AAAAAAAACAA=' }))
   })
 })
+
+describe('OperationForm — field help', () => {
+  it('R12.AC9: the form explains Kind, Input type and the labels', async () => {
+    renderManage()
+    const f = await openAddForm()
+
+    expect(within(f).getByLabelText('Kind')).toHaveAccessibleDescription(/only a category for the list/i)
+    expect(within(f).getByLabelText('Input type')).toHaveAccessibleDescription(
+      /Number \(12, -2\.5\), Text \(any words\), Coordinate \(latitude, longitude\)/,
+    )
+    expect(within(f).getByLabelText('Field A label')).toHaveAccessibleDescription(/above the first box.*not a value/i)
+    expect(within(f).getByLabelText('Field B label')).toHaveAccessibleDescription(/above the second box.*not a value/i)
+    expect(within(f).getByLabelText('Formula')).toHaveAccessibleDescription(/checked when you save/i)
+  })
+})

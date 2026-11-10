@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useApi } from '../api/ApiContext.jsx'
 import { toDefinition } from '../api/definitions.js'
 
@@ -8,6 +8,15 @@ const INPUT_TYPES = ['Number', 'Text', 'Coordinate']
 const EMPTY = { id: '', name: '', kind: 'Arithmetic', fieldALabel: '', fieldBLabel: '', inputType: 'Number', formula: '', isEnabled: true }
 
 export const CONFLICT_MESSAGE = 'This operation was changed by someone else. Reload to see the latest version.'
+
+/** One line of help under a field (R12.AC9); the field points at it with aria-describedby. */
+const HELP = {
+  kind: "Only a category for the list; it doesn't change how the formula runs.",
+  inputType: 'How the two values typed in the Calculator are read: Number (12, -2.5), Text (any words), Coordinate (latitude, longitude).',
+  fieldALabel: 'The name shown above the first box in the Calculator, e.g. Base — not a value.',
+  fieldBLabel: 'The name shown above the second box in the Calculator, e.g. Exponent — not a value.',
+  formula: 'Use A and B, e.g. A * 3 + B. Checked when you save: it must work with the input type.',
+}
 
 /** Form values for an operation as the API returned it (a code operation's null formula shows as empty). */
 const valuesOf = (operation) => {
@@ -31,6 +40,13 @@ export default function OperationForm({ operation = null, onSaved, onCancel }) {
   const [error, setError] = useState(null) // { message, field, conflict }
   const [busy, setBusy] = useState(false)
   const firstField = useRef(null)
+  const helpIdPrefix = useId()
+  const helpId = (field) => `${helpIdPrefix}-${field}-help`
+  const help = (field) => (
+    <small id={helpId(field)} className="field-help">
+      {HELP[field]}
+    </small>
+  )
 
   // Move the keyboard focus into the form when it opens (the Edit button may be far down the table).
   useEffect(() => firstField.current?.focus(), [])
@@ -86,42 +102,64 @@ export default function OperationForm({ operation = null, onSaved, onCancel }) {
           <span>Name</span>
           <input ref={editing ? firstField : undefined} value={values.name} onChange={set('name')} aria-invalid={invalid('name')} autoComplete="off" />
         </label>
-        <label className="field">
-          <span>Kind</span>
-          <select value={values.kind} onChange={set('kind')} disabled={logicLocked} aria-invalid={invalid('kind')}>
-            {KINDS.map((k) => (
-              <option key={k}>{k}</option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>Input type</span>
-          <select value={values.inputType} onChange={set('inputType')} disabled={logicLocked} aria-invalid={invalid('inputType')}>
-            {INPUT_TYPES.map((t) => (
-              <option key={t}>{t}</option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span>Field A label</span>
-          <input value={values.fieldALabel} onChange={set('fieldALabel')} aria-invalid={invalid('fieldALabel')} autoComplete="off" />
-        </label>
-        <label className="field">
-          <span>Field B label</span>
-          <input value={values.fieldBLabel} onChange={set('fieldBLabel')} aria-invalid={invalid('fieldBLabel')} autoComplete="off" />
-        </label>
-        <label className="field wide">
-          <span>Formula</span>
-          <input
-            value={values.formula}
-            onChange={set('formula')}
-            disabled={logicLocked}
-            aria-invalid={invalid('formula')}
-            placeholder={isCodeOperation ? 'built-in (runs code, not a formula)' : 'e.g. (A + B) / 2'}
-            autoComplete="off"
-            spellCheck={false}
-          />
-        </label>
+        <div className="field-with-help">
+          <label className="field">
+            <span>Kind</span>
+            <select value={values.kind} onChange={set('kind')} disabled={logicLocked} aria-invalid={invalid('kind')} aria-describedby={helpId('kind')}>
+              {KINDS.map((k) => (
+                <option key={k}>{k}</option>
+              ))}
+            </select>
+          </label>
+          {help('kind')}
+        </div>
+        <div className="field-with-help">
+          <label className="field">
+            <span>Input type</span>
+            <select
+              value={values.inputType}
+              onChange={set('inputType')}
+              disabled={logicLocked}
+              aria-invalid={invalid('inputType')}
+              aria-describedby={helpId('inputType')}
+            >
+              {INPUT_TYPES.map((t) => (
+                <option key={t}>{t}</option>
+              ))}
+            </select>
+          </label>
+          {help('inputType')}
+        </div>
+        <div className="field-with-help">
+          <label className="field">
+            <span>Field A label</span>
+            <input value={values.fieldALabel} onChange={set('fieldALabel')} aria-invalid={invalid('fieldALabel')} aria-describedby={helpId('fieldALabel')} autoComplete="off" />
+          </label>
+          {help('fieldALabel')}
+        </div>
+        <div className="field-with-help">
+          <label className="field">
+            <span>Field B label</span>
+            <input value={values.fieldBLabel} onChange={set('fieldBLabel')} aria-invalid={invalid('fieldBLabel')} aria-describedby={helpId('fieldBLabel')} autoComplete="off" />
+          </label>
+          {help('fieldBLabel')}
+        </div>
+        <div className="field-with-help wide">
+          <label className="field">
+            <span>Formula</span>
+            <input
+              value={values.formula}
+              onChange={set('formula')}
+              disabled={logicLocked}
+              aria-invalid={invalid('formula')}
+              aria-describedby={helpId('formula')}
+              placeholder={isCodeOperation ? 'built-in (runs code, not a formula)' : 'e.g. (A + B) / 2'}
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </label>
+          {help('formula')}
+        </div>
         <label className="checkbox">
           <input type="checkbox" checked={values.isEnabled} onChange={set('isEnabled')} />
           <span>Enabled</span>

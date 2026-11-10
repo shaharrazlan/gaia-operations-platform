@@ -598,13 +598,14 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Commit: —
   - Note: the logic was built (and seen red) in T62/T63, so these API tests passed on the first run. Run in Release because a leftover dev API locked the Debug build folder. Integration 111/111.
 
-- [ ] **T65 · Form field help**
+- [x] **T65 · Form field help**
   - Covers: R12.AC9 · Step S13
   - Files: `client/src/components/OperationForm.jsx`, `client/src/styles.css`, `client/src/components/OperationForm.test.jsx`
   - Tests: component "R12.AC9: the form explains Kind, Input type and the labels"
   - Depends on: —
   - Done when: test passes; component suite and lint green.
   - Commit: —
+  - Note: red seen first. Each hint sits under its field, outside the label (so the field names stay "Kind", "Input type"…), and is linked with aria-describedby, so screen readers read it too. Also a hint under Formula ("checked when you save"). Component 67/67, lint clean. Visual check pending: LocalDB stalled during the session.
 
 - [ ] **T66 · S13 review, all levels, README**
   - Covers: S13 · Step S13

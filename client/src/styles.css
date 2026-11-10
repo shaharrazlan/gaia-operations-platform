@@ -249,6 +249,19 @@ button.secondary {
   grid-column: 1 / -1;
 }
 
+/* A field with one line of help under it (R12.AC9). */
+.field-with-help {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-help {
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
 @media (max-width: 640px) {
   .form-grid {
     grid-template-columns: 1fr;
