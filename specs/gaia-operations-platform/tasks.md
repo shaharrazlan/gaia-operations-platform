@@ -460,7 +460,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 ## S10 · E2E + README + submission   (Must) · ~1.5 h
 
-- [ ] **T49 · E2E: calculate** [P]
+- [x] **T49 · E2E: calculate** [P]
   - Covers: R1.AC1, R2.AC1, R5.AC3 · Step S10
   - Files: `client/e2e/calculate.spec.js`
   - Tests: e2e "R5.AC3: 7 ÷ 2 shows 3.5"
