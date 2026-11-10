@@ -169,3 +169,19 @@ All five gaps were fixed the same day: T57 (0e9806a), T58 and T59 (efec81b), T60
 - `test-all.ps1` passed twice in a row: unit 235, integration 108, component 66, E2E 5.
 
 What's left before submission is T56 (README, Submission notes, private repo) and T53 (CI).
+
+## Addendum: S13 formula checks (2026-11-10, commit 125dab4)
+
+**Why S13 was added.** Hands-on testing found that `A ^ B` saved with input type Text could never run. It failed only in the Calculator, with a technical message, in front of a user who couldn't fix it. The spec gained R4.AC8, R4.AC9, R12.AC9 and A11, and S13 (T62–T66) built them test-first.
+
+| AC | Pri | Expected (plan) | Unit | Integ | Comp | Result |
+|---|---|---|---|---|---|---|
+| R4.AC8 | Should | unit, int | 8 (type-check tables, save/update rules, seeded formulas) | 2 | | ✅ |
+| R4.AC9 | Should | unit, int | 2 (rejected/accepted tables) | 1 | | ✅ |
+| R12.AC9 | Should | comp | | | 1 | ✅ |
+
+- **All levels green:** unit 299, integration 111, component 67, E2E 5. CI (unit + component) green on 125dab4.
+- **Checked in the browser:** the hints show under each field, and saving `A ^ B` with Text shows *"'^' at position 3 needs two numbers, but here it gets a text and a text. A and B are text because the input type is Text. Choose input type Number for calculations."* Nothing is saved.
+- **Review (high):** 5 findings, 4 fixed, 1 skipped (efficiency only).
+  - The most important fix: operations saved before the checks can still be renamed or disabled, because a save that doesn't change the formula or the input type isn't re-checked.
+- **Verdict unchanged:** ✅ every AC passes; nothing open in tasks.md.
