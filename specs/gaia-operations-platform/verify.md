@@ -161,3 +161,11 @@ Started with `scripts/run.ps1` from the clone: both windows opened, `/health` an
 | G3 | Right after the integration run, LocalDB can stall. On this machine (7.7 GB RAM, 0.7 GB free) the LocalDB log shows `FAIL_PAGE_ALLOCATION` and a 48 KB buffer pool, so the E2E server misses its 120 s start window and the dev API returns 503s. `sqllocaldb stop`/`start` (plus `dotnet build-server shutdown`) fixes it. Cause: low system memory, not the code. | Medium: shows up on low-memory machines | T59 |
 | G4 | No integration test executes a *disabled* operation over HTTP (R2.AC2, R4.AC3). | Low: unit-tested and checked by hand | T60 |
 | G5 | No test checks that a deleted operation's runs are kept (R4.AC3 "past history is kept"). | Low: FK `Restrict` + soft delete; checked by hand | T61 |
+
+## Gaps fixed (2026-11-10)
+
+All five gaps were fixed the same day: T57 (0e9806a), T58 and T59 (efec81b), T60 (c5d1845), T61 (526d846). Re-checked on a fresh clone:
+- `run.ps1` with no client packages installed them and started the app in 48 s (NFR3 ✅).
+- `test-all.ps1` passed twice in a row: unit 235, integration 108, component 66, E2E 5.
+
+What's left before submission is T56 (README, Submission notes, private repo) and T53 (CI).

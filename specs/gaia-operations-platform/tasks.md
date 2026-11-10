@@ -525,7 +525,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Depends on: —
   - Done when: `npm --prefix client install` is replaced by a form that works on npm 11 (e.g. `npm ci --prefix client`, which installs exactly the lock file) in both places; fresh-clone run passes.
   - Note: verified on a fresh clone with no `client/node_modules`: `run.ps1` ran `npm ci`, built and started both servers (API and UI answering 200) in 48 s.
-  - Commit: —
+  - Commit: 0e9806a
 
 - [x] **T58 · test-all.ps1 installs client packages (G2)**
   - Covers: NFR3, R13.AC6 · Step S10
@@ -534,7 +534,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Depends on: T57
   - Done when: the script runs `npm ci --prefix client` when `client/node_modules` is missing; the README says a first run installs the client packages and Playwright's Chromium (`npx --prefix client playwright install chromium`), and that the R13.AC6 build scan runs only after a client build.
   - Note: verified: `test-all.ps1` on a fresh clone installs the packages in its new "Client packages" step and passes every level. `npx --prefix client playwright …` works on npm 11 (checked `--version`).
-  - Commit: —
+  - Commit: efec81b
 
 - [x] **T59 · LocalDB stall after the integration run (G3)**
   - Covers: NFR3 · Step S10
@@ -543,7 +543,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Depends on: T58
   - Done when: before E2E the script frees memory held by idle build servers (`dotnet build-server shutdown`); the README has a Troubleshooting entry (symptoms: 503 `database_unavailable`, Playwright "Timed out waiting … webServer"; fix: `sqllocaldb stop MSSQLLocalDB` then `sqllocaldb start MSSQLLocalDB`; cause: low free memory). If it still fails twice in a row, record it as a known limitation instead.
   - Note: besides `dotnet build-server shutdown`, the new "Prepare E2E" step also restarts the LocalDB instance (skipped when `sqllocaldb` is not installed): that restart is what fixed the stall every time. Low review: a failing `sqllocaldb start` now fails this step instead of surfacing as an E2E timeout. Verified: `test-all.ps1` twice in a row on a fresh clone, both green (unit 235, integration 108, component 66, E2E 5; 6 m 18 s and 1 m 54 s).
-  - Commit: —
+  - Commit: efec81b
 
 - [x] **T60 · Integration test: a disabled operation can't be executed (G4)**
   - Covers: R2.AC2, R4.AC3 · Step S6
@@ -551,7 +551,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: integration "R2_AC2_executing_a_disabled_operation_returns_404_operation_not_found"
   - Depends on: —
   - Done when: the test passes; `dotnet test tests/Gaia.Api.Tests` green.
-  - Commit: —
+  - Commit: c5d1845
   - Note: the behaviour already worked, so red was shown with a temporary mutation (execute ignoring "disabled" → expected 404, got 200), then reverted. Integration: 108/108.
 
 - [x] **T61 · Integration test: deleting an operation keeps its runs (G5)**
@@ -560,7 +560,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: integration "R4_AC3_deleting_an_operation_keeps_its_runs"
   - Depends on: —
   - Done when: the test passes; `dotnet test tests/Gaia.Api.Tests` green.
-  - Commit: —
+  - Commit: 526d846
   - Note: red shown with a temporary mutation (delete also removing the runs → expected 2, got 0), then reverted.
 
 ## Submit (always last)
