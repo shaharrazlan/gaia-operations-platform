@@ -12,12 +12,14 @@ public static class FormulaEngine
 {
     /// <summary>
     /// Throws a ValidationException (code formula_invalid, with position) if the formula can't be run:
-    /// it doesn't parse (R4.AC4), or its parts can't work with the input type (R4.AC8).
+    /// it doesn't parse (R4.AC4), its parts can't work with the input type (R4.AC8), or a fixed part can never
+    /// produce a result (R4.AC9).
     /// </summary>
     public static void Validate(string formula, InputType inputType)
     {
         var tree = FormulaParser.Parse(formula);
         TypeChecker.Check(tree, inputType);
+        ConstantCheck.Check(tree);
     }
 
     /// <summary>Runs the formula on the two raw inputs and returns the formatted result.</summary>

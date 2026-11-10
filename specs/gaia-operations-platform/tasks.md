@@ -580,13 +580,14 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Commit: —
   - Note: red seen first (26 tests: no error raised). The function table now also lists each function's parameter and result types (`Functions.cs`, not in the file list) so the whitelist stays the single source. The run-time message uses the same wording (`OperatorRules`). Unit 276/276.
 
-- [ ] **T63 · Always-fails check (ConstantCheck)**
+- [x] **T63 · Always-fails check (ConstantCheck)**
   - Covers: R4.AC9 · Step S13
   - Files: `src/Gaia.Core/Formulas/ConstantCheck.cs`, `src/Gaia.Core/Formulas/FormulaEngine.cs`, `tests/Gaia.Core.Tests/Formulas/ConstantCheckTests.cs`
   - Tests: unit "R4.AC9: <case> is rejected" (table), "R4.AC9: <case> is accepted" (table)
   - Depends on: T62
   - Done when: tests pass; unit suite green.
   - Commit: —
+  - Note: red seen first (9 rejected cases passed through). Fixed parts are run now by the same Evaluator/Functions, so messages match the Calculator's; a fixed `if` condition checks only the branch that can run; function calls with fixed arguments are tried with a sample (1 or "x") for A/B parts. Unit 296/296.
 
 - [ ] **T64 · Integration: the API refuses formulas that can't work**
   - Covers: R4.AC8, R4.AC9 · Step S13
