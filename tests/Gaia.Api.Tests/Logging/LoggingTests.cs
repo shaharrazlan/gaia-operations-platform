@@ -96,3 +96,52 @@ public class CorrelationIdTests(LoggingFactory factory) : IClassFixture<LoggingF
         Assert.Equal(Assert.Single(response.Headers.GetValues("X-Correlation-Id")), problem.GetProperty("correlationId").GetString());
     }
 }
+
+/// <summary>Helpers to read the in-memory logs the way the two log files would be filtered.</summary>
+internal static class Logs
+{
+    public static string CorrelationIdOf(HttpResponseMessage response) =>
+        Assert.Single(response.Headers.GetValues("X-Correlation-Id"));
+
+    public static List<LogEvent> For(ListSink sink, string correlationId, Func<LogEvent, bool> file) =>
+        sink.Events.Where(e => file(e)
+            && e.Properties.TryGetValue("CorrelationId", out var id)
+            && id is ScalarValue { Value: string s } && s == correlationId).ToList();
+}
+
+public class ErrorLogTests(LoggingFactory factory) : IClassFixture<LoggingFactory>
+{
+    private Task<HttpResponseMessage> ExecuteAsync(string id, string a, string b) =>
+        factory.CreateClient().PostAsJsonAsync($"/api/operations/{id}/execute", new { fieldA = a, fieldB = b });
+
+    [Fact]
+    public async Task R10_AC1_an_unexpected_error_is_written_to_the_error_log_with_its_stack_and_the_caller_gets_no_details()
+    {
+        var response = await ExecuteAsync("weather", "32", "34");   // the test handler throws
+
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("internal_error", body);
+        Assert.DoesNotContain("XYZ-123", body);       // the exception message stays on the server
+        Assert.DoesNotContain("   at ", body);        // no stack trace
+
+        var entry = Assert.Single(Logs.For(factory.Sink, Logs.CorrelationIdOf(response), Gaia.Api.Logging.LogSetup.IsErrorLog));
+        Assert.Equal(LogEventLevel.Error, entry.Level);
+        var exception = Assert.IsType<InvalidOperationException>(entry.Exception);
+        Assert.Contains("XYZ-123", exception.Message);
+        Assert.NotNull(exception.StackTrace);
+        Assert.Contains("/api/operations/weather/execute", entry.RenderMessage());
+    }
+
+    [Theory]
+    [InlineData("divide", "abc", "2", HttpStatusCode.BadRequest)]           // validation
+    [InlineData("nope", "1", "2", HttpStatusCode.NotFound)]                 // not found
+    [InlineData("divide", "5", "0", HttpStatusCode.UnprocessableEntity)]    // division by zero
+    public async Task R10_AC2_expected_business_errors_are_not_written_to_the_error_log(string id, string a, string b, HttpStatusCode status)
+    {
+        var response = await ExecuteAsync(id, a, b);
+
+        Assert.Equal(status, response.StatusCode);
+        Assert.Empty(Logs.For(factory.Sink, Logs.CorrelationIdOf(response), Gaia.Api.Logging.LogSetup.IsErrorLog));
+    }
+}

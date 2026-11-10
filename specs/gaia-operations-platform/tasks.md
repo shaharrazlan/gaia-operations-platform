@@ -435,16 +435,17 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: integration "T46: every response has an X-Correlation-Id header"
   - Depends on: T45
   - Done when: `INT` green; `logs/` files appear when running.
-  - Commit: (T46)
+  - Commit: 3e6f4e4
   - Notes: the two filtered file outputs are set up in code (`Logging/LogSetup.cs`: errors = Error and above, requests = lines from the request middleware) rather than in appsettings, so the filter rules are readable C# and the tests reuse the same predicates; appsettings keeps only the levels (`Serilog` section) and `LogFiles:Directory` (empty in tests = no files). A caller-sent `X-Correlation-Id` is kept if it is plain (letters, digits, - and _, up to 64), otherwise replaced. Error bodies now carry `correlationId` too (the plan's contract). The R13.AC8 startup-warning test now reads the Serilog in-memory sink (Serilog replaces .NET's logger). Package: Serilog.AspNetCore 10.0.0 (no known vulnerabilities).
 
-- [ ] **T47 · Error log**
+- [x] **T47 · Error log**
   - Covers: R10.AC1, R10.AC2 · Step S9
   - Files: `src/Gaia.Api/Logging/ErrorLogging.cs` (exception handler), `ProblemDetailsMapper.cs`
   - Tests: integration "R10.AC1: unhandled exception → error log entry with stack and correlation id; response has no stack"; integration "R10.AC2: 400/404/422 write no error-log entry"
   - Depends on: T46
   - Done when: `INT` green.
-  - Commit: —
+  - Commit: (T47)
+  - Notes: no separate `ErrorLogging.cs` — `ProblemDetailsMapper` (already the one place every exception passes) logs anything that is not a `GaiaException` at Error with the exception, method and path; .NET 10 no longer logs exceptions that an `IExceptionHandler` handles, so without this nothing reached the log (seen red). Tests cause the unexpected error by swapping in a crashing weather handler (no test-only endpoint in the product). During this task LocalDB degraded (test databases timing out); `sqllocaldb stop`/`start` fixed it — to mention in the README.
 
 - [ ] **T48 · Request/response log**
   - Covers: R11.AC1, R11.AC2, R13.AC7 · Step S9
