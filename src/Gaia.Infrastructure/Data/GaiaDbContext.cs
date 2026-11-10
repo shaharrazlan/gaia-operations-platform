@@ -1,3 +1,4 @@
+using Gaia.Core.History;
 using Gaia.Core.Operations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -8,6 +9,7 @@ namespace Gaia.Infrastructure.Data;
 public class GaiaDbContext(DbContextOptions<GaiaDbContext> options) : DbContext(options)
 {
     public DbSet<OperationDefinition> Operations => Set<OperationDefinition>();
+    public DbSet<OperationRun> Runs => Set<OperationRun>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

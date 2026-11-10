@@ -379,13 +379,14 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 ## S8 · History, last 3, monthly count   (Could) · ~1.75 h
 
-- [ ] **T41 · OperationRun storage** [P]
+- [x] **T41 · OperationRun storage** [P]
   - Covers: foundation for R7 · Step S8
   - Files: `src/Gaia.Core/History/IRunRepository.cs`, `RunRecord.cs`, `src/Gaia.Infrastructure/Data/EfRunRepository.cs`, `GaiaDbContext.cs` (OperationRun), migration `*AddOperationRuns*`
   - Tests: integration "T41: migration creates OperationRuns with index"
   - Depends on: T40
   - Done when: `INT` green.
-  - Commit: —
+  - Commit: (T41)
+  - Note: the entity is `Core/History/OperationRun.cs` (the plan's data-model name) instead of `RunRecord.cs`; `OperationRunEntityConfig.cs` holds the table shape (same pattern as Operations). Also a test that a run must point at an existing operation (foreign key). `IRunRepository` reads by "latest successful except this run" and "count successful since".
 
 - [ ] **T42 · Israel month boundary** [P]
   - Covers: R9.AC4 · Step S8

@@ -22,6 +22,58 @@ namespace Gaia.Infrastructure.Data.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Gaia.Core.History.OperationRun", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DurationMs")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ErrorCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("FieldA")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("FieldB")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsSuccess")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OperationId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .UseCollation("Latin1_General_100_BIN2");
+
+                    b.Property<string>("Result")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OperationId", "IsSuccess", "CreatedAtUtc")
+                        .IsDescending(false, false, true)
+                        .HasDatabaseName("IX_OperationRuns_History");
+
+                    b.ToTable("OperationRuns", (string)null);
+                });
+
             modelBuilder.Entity("Gaia.Core.Operations.OperationDefinition", b =>
                 {
                     b.Property<string>("Id")
@@ -248,6 +300,15 @@ namespace Gaia.Infrastructure.Data.Migrations
                             UpdatedAtUtc = new DateTime(2026, 11, 9, 0, 0, 0, 0, DateTimeKind.Utc),
                             Version = new byte[0]
                         });
+                });
+
+            modelBuilder.Entity("Gaia.Core.History.OperationRun", b =>
+                {
+                    b.HasOne("Gaia.Core.Operations.OperationDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("OperationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }
