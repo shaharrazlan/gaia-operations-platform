@@ -542,21 +542,23 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Done when: before E2E the script frees memory held by idle build servers (`dotnet build-server shutdown`); the README has a Troubleshooting entry (symptoms: 503 `database_unavailable`, Playwright "Timed out waiting … webServer"; fix: `sqllocaldb stop MSSQLLocalDB` then `sqllocaldb start MSSQLLocalDB`; cause: low free memory). If it still fails twice in a row, record it as a known limitation instead.
   - Commit: —
 
-- [ ] **T60 · Integration test: a disabled operation can't be executed (G4)**
+- [x] **T60 · Integration test: a disabled operation can't be executed (G4)**
   - Covers: R2.AC2, R4.AC3 · Step S6
   - Files: `tests/Gaia.Api.Tests/Api/ManagementTests.cs`
   - Tests: integration "R2_AC2_executing_a_disabled_operation_returns_404_operation_not_found"
   - Depends on: —
   - Done when: the test passes; `dotnet test tests/Gaia.Api.Tests` green.
   - Commit: —
+  - Note: the behaviour already worked, so red was shown with a temporary mutation (execute ignoring "disabled" → expected 404, got 200), then reverted. Integration: 108/108.
 
-- [ ] **T61 · Integration test: deleting an operation keeps its runs (G5)**
+- [x] **T61 · Integration test: deleting an operation keeps its runs (G5)**
   - Covers: R4.AC3, R7 · Step S8
   - Files: `tests/Gaia.Api.Tests/Api/HistoryTests.cs`
   - Tests: integration "R4_AC3_deleting_an_operation_keeps_its_runs"
   - Depends on: —
   - Done when: the test passes; `dotnet test tests/Gaia.Api.Tests` green.
   - Commit: —
+  - Note: red shown with a temporary mutation (delete also removing the runs → expected 2, got 0), then reverted.
 
 ## Submit (always last)
 

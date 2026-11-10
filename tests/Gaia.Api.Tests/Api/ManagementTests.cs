@@ -233,6 +233,23 @@ public class ManagementTests(GaiaApiFactory factory) : IClassFixture<GaiaApiFact
         Assert.DoesNotContain(id, await CatalogIdsAsync());
     }
 
+    [Fact]
+    public async Task R2_AC2_executing_a_disabled_operation_returns_404_operation_not_found()
+    {
+        var id = NewId("paused");
+        var created = await CreateAsync(id);
+        Assert.Equal("5", await ExecuteAsync(id, "4", "6"));
+        var disable = await _client.PutAsJsonAsync($"/api/operations/{id}", DisabledCopy(created));
+        Assert.Equal(HttpStatusCode.OK, disable.StatusCode);
+
+        var response = await _client.PostAsJsonAsync($"/api/operations/{id}/execute", new { fieldA = "4", fieldB = "6" });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("operation_not_found", problem.GetProperty("code").GetString());
+        Assert.Contains(id, problem.GetProperty("detail").GetString());
+    }
+
     private static Dictionary<string, object?> DisabledCopy(JsonElement loaded)
     {
         var body = JsonSerializer.Deserialize<Dictionary<string, object?>>(loaded.GetRawText())!;
