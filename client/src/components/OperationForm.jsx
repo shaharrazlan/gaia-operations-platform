@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApi } from '../api/ApiContext.jsx'
 import { toDefinition } from '../api/definitions.js'
 
@@ -30,8 +30,12 @@ export default function OperationForm({ operation = null, onSaved, onCancel }) {
   const [version, setVersion] = useState(operation?.version)
   const [error, setError] = useState(null) // { message, field, conflict }
   const [busy, setBusy] = useState(false)
+  const firstField = useRef(null)
 
-  const set = (field) => (event) => {
+  // Move the keyboard focus into the form when it opens (the Edit button may be far down the table).
+  useEffect(() => firstField.current?.focus(), [])
+
+  const set =(field) => (event) => {
     const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value
     setValues((current) => ({ ...current, [field]: value }))
   }
@@ -76,11 +80,11 @@ export default function OperationForm({ operation = null, onSaved, onCancel }) {
       <div className="form-grid">
         <label className="field">
           <span>Id</span>
-          <input value={values.id} onChange={set('id')} disabled={editing} aria-invalid={invalid('id')} placeholder="e.g. average" autoComplete="off" />
+          <input ref={editing ? undefined : firstField} value={values.id} onChange={set('id')} disabled={editing} aria-invalid={invalid('id')} placeholder="e.g. average" autoComplete="off" />
         </label>
         <label className="field">
           <span>Name</span>
-          <input value={values.name} onChange={set('name')} aria-invalid={invalid('name')} autoComplete="off" />
+          <input ref={editing ? firstField : undefined} value={values.name} onChange={set('name')} aria-invalid={invalid('name')} autoComplete="off" />
         </label>
         <label className="field">
           <span>Kind</span>

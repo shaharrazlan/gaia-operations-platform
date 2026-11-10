@@ -53,7 +53,11 @@ export default function ManageView() {
   function saved(operation) {
     setOperations((list) => [...list.filter((o) => o.id !== operation.id), operation].sort((a, b) => a.name.localeCompare(b.name)))
     setForm(null)
+    setNotice(null)
   }
+
+  // The row open in the form can't be toggled or deleted meanwhile, or the form's version would go stale.
+  const locked = (operation) => busyId === operation.id || form?.operation?.id === operation.id
 
   const remove = (operation) => {
     if (!window.confirm(`Delete "${operation.name}"? It disappears from the calculator; its history is kept.`)) return
@@ -133,7 +137,7 @@ export default function ManageView() {
                       type="checkbox"
                       aria-label={`Enabled: ${o.name}`}
                       checked={o.isEnabled}
-                      disabled={busyId === o.id}
+                      disabled={locked(o)}
                       onChange={() => toggle(o)}
                     />
                   </td>
@@ -142,7 +146,7 @@ export default function ManageView() {
                       Edit
                     </button>
                     {!o.isSystem && (
-                      <button type="button" className="secondary" disabled={busyId === o.id} onClick={() => remove(o)} aria-label={`Delete ${o.name}`}>
+                      <button type="button" className="secondary" disabled={locked(o)} onClick={() => remove(o)} aria-label={`Delete ${o.name}`}>
                         Delete
                       </button>
                     )}

@@ -144,6 +144,37 @@ describe('OperationForm — edit', () => {
     expect(within(await row('Average')).getByText('(A + B + 1) / 2')).toBeInTheDocument()
   })
 
+  it('S7: while an operation is being edited, its row can not be toggled or deleted', async () => {
+    renderManage()
+    await openEditForm('Average')
+
+    const average = await row('Average')
+    expect(within(average).getByRole('checkbox', { name: 'Enabled: Average' })).toBeDisabled()
+    expect(within(average).getByRole('button', { name: 'Delete Average' })).toBeDisabled()
+    expect(within(await row('Hypotenuse')).getByRole('checkbox', { name: 'Enabled: Hypotenuse' })).toBeEnabled()
+  })
+
+  it('S7: opening the form puts the keyboard focus in it', async () => {
+    renderManage()
+
+    const f = await openEditForm('Average')
+
+    expect(within(f).getByLabelText('Name')).toHaveFocus()
+  })
+
+  it('S7: a successful save clears an earlier error notice', async () => {
+    const conflict = new ApiError({ status: 409, code: 'edit_conflict', detail: 'Changed by someone else.' })
+    renderManage({ updateOperation: vi.fn().mockRejectedValueOnce(conflict).mockImplementation(async (id, d) => ({ ...d, id, isSystem: false, version: 'v3' })) })
+    await userEvent.click(within(await row('Average')).getByRole('checkbox', { name: 'Enabled: Average' }))
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+
+    const f = await openEditForm('Hypotenuse')
+    await userEvent.click(within(f).getByRole('button', { name: 'Save' }))
+
+    await screen.findByRole('button', { name: 'Add operation' })
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
   it('R12.AC8: an edit conflict shows the message, keeps the inputs, and Reload loads the latest version', async () => {
     const conflict = new ApiError({ status: 409, code: 'edit_conflict', detail: 'Conflict.' })
     const latest = { ...sampleManagedOperations[3], name: 'Average (renamed elsewhere)', version: 'AAAAAAAACAA=' }

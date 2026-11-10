@@ -330,8 +330,10 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: component "R12.AC4: system op — formula, kind and input type are read-only"; component "R12.AC8: 409 edit_conflict shows the conflict message, keeps inputs, Reload loads the latest"
   - Depends on: T35
   - Done when: `COMP` green.
-  - Commit: (T36)
+  - Commit: 39c301d
   - Also: edit form reuses `OperationForm` (Id locked when editing; code ops keep formula null); after a conflict, Reload replaces the inputs with the latest saved version; `styles.css` (hint).
+  - S7 review (high): the row open in the form can't be toggled or deleted meanwhile (would make the form's version stale); a successful save clears an old error notice; opening the form moves keyboard focus into it. Kept: `change()` and the form's `run()` share a small busy/try/catch shape but feed different error displays. `/simplify` angles covered inside the review; no auth/secrets in this step (S12 next).
+  - Real-app check (built-in browser, real API): table lists all 10 seed ops; add with a broken formula → server message + Formula marked + inputs kept; fixed formula → saved; Calculator shows "Midpoint" with labels From/To without reload; 4, 10 → 7. Test op then deleted (soft delete; id `midpoint` stays taken in the dev DB).
 
 ## S12 · Management key   (Should) · ~1 h
 
