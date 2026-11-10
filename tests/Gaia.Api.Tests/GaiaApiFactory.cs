@@ -1,6 +1,7 @@
 using Gaia.Infrastructure.Data;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace Gaia.Api.Tests;
@@ -45,8 +46,39 @@ public class GaiaApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await using var db = CreateDbContext();
-        await db.Database.MigrateAsync();
+        // LocalDB is sometimes very slow to create a database (seen as a timeout during the first migration).
+        // Retry once on a clean slate, and never leave a half-made database behind.
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await using var db = CreateDbContext();
+                await db.Database.MigrateAsync();
+                return;
+            }
+            catch (SqlException) when (attempt < 2)
+            {
+                await DropDatabaseAsync();
+            }
+            catch
+            {
+                await DropDatabaseAsync();
+                throw;
+            }
+        }
+    }
+
+    private async Task DropDatabaseAsync()
+    {
+        try
+        {
+            await using var db = CreateDbContext();
+            await db.Database.EnsureDeletedAsync();
+        }
+        catch (SqlException)
+        {
+            // best effort; the original error matters more
+        }
     }
 
     async Task IAsyncLifetime.DisposeAsync()

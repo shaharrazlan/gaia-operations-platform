@@ -7,6 +7,7 @@ using Gaia.Api;
 using Gaia.Api.Errors;
 using Gaia.Api.Security;
 using Gaia.Core.Errors;
+using Gaia.Core.History;
 using Gaia.Core.Operations;
 using Gaia.Core.Services;
 using Gaia.Infrastructure.Data;
@@ -29,6 +30,8 @@ builder.Services.AddDbContext<GaiaDbContext>((services, options) =>
 });
 builder.Services.AddScoped<IOperationRepository, EfOperationRepository>();
 builder.Services.AddScoped<OperationService>();
+builder.Services.AddScoped<IRunRepository, EfRunRepository>();
+builder.Services.AddScoped<RunRecorder>();
 builder.Services.AddScoped<CatalogService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.Configure<ManagementKeyOptions>(builder.Configuration.GetSection(ManagementKeyOptions.Section));

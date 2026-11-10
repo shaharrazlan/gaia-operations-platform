@@ -1,3 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <ItemGroup>
+    <!-- ILogger only (no logging implementation): the history code writes its failures to the error log (R7.AC3). -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
+  </ItemGroup>
+
 </Project>

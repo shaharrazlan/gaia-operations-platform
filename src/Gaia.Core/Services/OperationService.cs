@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using Gaia.Core.Errors;
 using Gaia.Core.Formulas;
+using Gaia.Core.History;
 using Gaia.Core.Operations;
 
 namespace Gaia.Core.Services;
@@ -9,9 +11,9 @@ public sealed record ExecutionResult(string OperationId, string? FieldA, string?
 /// <summary>
 /// The business logic for end users and external apps: list the catalog, run an operation.
 /// Formula operations go through the <see cref="FormulaEngine"/>; code operations through their
-/// <see cref="IOperationHandler"/>. All rules live here, never in the UI (R6).
+/// <see cref="IOperationHandler"/>. Every run of an existing operation is recorded (R7). All rules live here, never in the UI (R6).
 /// </summary>
-public sealed class OperationService(IOperationRepository repository, IEnumerable<IOperationHandler> handlers)
+public sealed class OperationService(IOperationRepository repository, IEnumerable<IOperationHandler> handlers, RunRecorder recorder)
 {
     public Task<IReadOnlyList<OperationDefinition>> ListAsync(CancellationToken cancellationToken = default) =>
         repository.ListAsync(includeDisabled: false, cancellationToken);
@@ -21,12 +23,24 @@ public sealed class OperationService(IOperationRepository repository, IEnumerabl
     {
         var operation = await repository.FindAsync(operationId, cancellationToken);
         if (operation is not { IsAvailable: true })
-            throw new NotFoundException($"Operation '{operationId}' was not found.");
+            throw new NotFoundException($"Operation '{operationId}' was not found.");   // nothing to record: no such operation
 
-        var result = operation.Formula is { } formula
-            ? FormulaEngine.Evaluate(formula, operation.InputType, fieldA, fieldB)
-            : await RunHandlerAsync(operation, fieldA, fieldB, cancellationToken);
+        var started = Stopwatch.GetTimestamp();
+        string result;
+        try
+        {
+            result = operation.Formula is { } formula
+                ? FormulaEngine.Evaluate(formula, operation.InputType, fieldA, fieldB)
+                : await RunHandlerAsync(operation, fieldA, fieldB, cancellationToken);
+        }
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            // A failed run is history too (R7.AC1); the caller still gets the original error.
+            await recorder.RecordAsync(operation.Id, fieldA, fieldB, null, error, Stopwatch.GetElapsedTime(started), cancellationToken);
+            throw;
+        }
 
+        await recorder.RecordAsync(operation.Id, fieldA, fieldB, result, null, Stopwatch.GetElapsedTime(started), cancellationToken);
         return new ExecutionResult(operation.Id, fieldA, fieldB, result);
     }
 

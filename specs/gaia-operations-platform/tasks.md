@@ -394,16 +394,18 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: unit "R9.AC4: 1st 00:30 Israel time belongs to the new month (winter, UTC+2)"; unit "R9.AC4: same in summer (UTC+3)"
   - Depends on: T40
   - Done when: `UNIT` green.
-  - Commit: (T42)
+  - Commit: 4636cea
   - Also: a test that the offset of the 1st is used, not today's (1 Oct 2026 was summer time, 30 Oct winter time); `StartUtc(DateTime)` plus a `TimeProvider` overload.
 
-- [ ] **T43 · Record every run**
+- [x] **T43 · Record every run**
   - Covers: R7.AC1, R7.AC2, R7.AC3 · Step S8
   - Files: `src/Gaia.Core/History/RunRecorder.cs`, `OperationService.cs`, `Program.cs` (swap `IRunRecorder`)
   - Tests: integration "R7.AC1: success and failure runs stored with all fields"; integration "R7.AC2: a new host on the same DB reads earlier runs"; unit "R7.AC3: run repository failure → result still returned, history null, error logged"
   - Depends on: T41
   - Done when: `UNIT` and `INT` green.
-  - Commit: —
+  - Commit: (T43)
+  - Notes: `RunRecorder` stores a run for every execution of an existing operation (success with result; failure with code + message; unexpected errors as `internal_error` with no internals). Inputs, result and message are shortened to their column sizes. A store failure is logged at Error and never changes what the caller gets (R7.AC3). Unknown ids record nothing (no operation to point at). No `IRunRecorder` swap was needed (no stub existed); Core now references `Microsoft.Extensions.Logging.Abstractions` 10.0.14. The red step here was a compile error (tests and the new constructor landed together). R7.AC2 (new host reads earlier runs) is tested in T44, where history is returned.
+  - Test infra: `GaiaApiFactory` retries a timed-out database creation once and always drops a half-made database (LocalDB is sometimes very slow to create one; two runs had failed that way and left 3 test databases, removed by hand).
 
 - [ ] **T44 · History in the execute response**
   - Covers: R8.AC1–5, R9.AC1–3 · Step S8

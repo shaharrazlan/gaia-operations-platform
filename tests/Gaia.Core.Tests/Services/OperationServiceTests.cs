@@ -1,7 +1,10 @@
 using Gaia.Core.Errors;
 using Gaia.Core.Formulas;
+using Gaia.Core.History;
 using Gaia.Core.Operations;
 using Gaia.Core.Services;
+using Gaia.Core.Tests.History;
+using Microsoft.Extensions.Logging;
 
 namespace Gaia.Core.Tests.Services;
 
@@ -48,8 +51,92 @@ public class OperationServiceTests
         }
     }
 
+    private static readonly DateTime Now = new(2026, 11, 15, 10, 0, 0, DateTimeKind.Utc);
+
     private static OperationService Service(IOperationRepository repository, params IOperationHandler[] handlers) =>
-        new(repository, handlers);
+        Service(repository, new FakeRunRepository(), new ListLogger<RunRecorder>(), handlers);
+
+    private static OperationService Service(IOperationRepository repository, FakeRunRepository runs, ListLogger<RunRecorder> log,
+        params IOperationHandler[] handlers) =>
+        new(repository, handlers, new RunRecorder(runs, new FixedTime(Now), log));
+
+    // --- Recording runs (T43) ---
+
+    [Fact]
+    public async Task R7_AC1_a_successful_run_is_recorded_with_its_inputs_result_and_time()
+    {
+        var runs = new FakeRunRepository();
+        var service = Service(new FakeRepository(Op("divide", "A / B")), runs, new ListLogger<RunRecorder>());
+
+        await service.ExecuteAsync("divide", "7", "2");
+
+        var run = Assert.Single(runs.Runs);
+        Assert.Equal(("divide", "7", "2", "3.5", true), (run.OperationId, run.FieldA, run.FieldB, run.Result, run.IsSuccess));
+        Assert.Equal(Now, run.CreatedAtUtc);
+        Assert.Null(run.ErrorCode);
+    }
+
+    [Fact]
+    public async Task R7_AC1_a_failed_run_is_recorded_with_its_error_and_the_error_still_reaches_the_caller()
+    {
+        var runs = new FakeRunRepository();
+        var service = Service(new FakeRepository(Op("divide", "A / B")), runs, new ListLogger<RunRecorder>());
+
+        await Assert.ThrowsAsync<DomainException>(() => service.ExecuteAsync("divide", "5", "0"));
+
+        var run = Assert.Single(runs.Runs);
+        Assert.False(run.IsSuccess);
+        Assert.Null(run.Result);
+        Assert.Equal(ErrorCodes.Domain, run.ErrorCode);
+        Assert.Equal("Division by zero.", run.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task R7_AC1_inputs_longer_than_the_column_are_stored_shortened()
+    {
+        var runs = new FakeRunRepository();
+        var service = Service(new FakeRepository(Op("add", "A + B")), runs, new ListLogger<RunRecorder>());
+
+        await Assert.ThrowsAsync<ValidationException>(() => service.ExecuteAsync("add", new string('9', 5000), "1"));
+
+        Assert.Equal(OperationRun.MaxFieldLength, Assert.Single(runs.Runs).FieldA!.Length);
+    }
+
+    [Fact]
+    public async Task T43_an_unknown_operation_records_no_run()
+    {
+        var runs = new FakeRunRepository();
+        var service = Service(new FakeRepository(), runs, new ListLogger<RunRecorder>());
+
+        await Assert.ThrowsAsync<NotFoundException>(() => service.ExecuteAsync("nope", "1", "2"));
+
+        Assert.Empty(runs.Runs);
+    }
+
+    [Fact]
+    public async Task R7_AC3_when_the_history_store_fails_the_result_is_still_returned_and_the_failure_is_logged()
+    {
+        var log = new ListLogger<RunRecorder>();
+        var service = Service(new FakeRepository(Op("divide", "A / B")), new FakeRunRepository { Broken = true }, log);
+
+        var result = await service.ExecuteAsync("divide", "7", "2");
+
+        Assert.Equal("3.5", result.Result);
+        var entry = Assert.Single(log.Entries);
+        Assert.Equal(LogLevel.Error, entry.Level);
+        Assert.Contains("divide", entry.Message);
+        Assert.NotNull(entry.Exception);
+    }
+
+    [Fact]
+    public async Task R7_AC3_when_the_history_store_fails_on_a_failed_run_the_callers_error_is_unchanged()
+    {
+        var service = Service(new FakeRepository(Op("divide", "A / B")), new FakeRunRepository { Broken = true }, new ListLogger<RunRecorder>());
+
+        var error = await Assert.ThrowsAsync<DomainException>(() => service.ExecuteAsync("divide", "5", "0"));
+
+        Assert.Equal("Division by zero.", error.Message);
+    }
 
     [Fact]
     public async Task R2_AC1_executes_a_formula_operation_and_returns_its_result()
