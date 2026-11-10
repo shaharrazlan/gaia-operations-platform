@@ -607,13 +607,18 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Commit: —
   - Note: red seen first. Each hint sits under its field, outside the label (so the field names stay "Kind", "Input type"…), and is linked with aria-describedby, so screen readers read it too. Also a hint under Formula ("checked when you save"). Component 67/67, lint clean. Visual check pending: LocalDB stalled during the session.
 
-- [ ] **T66 · S13 review, all levels, README**
+- [x] **T66 · S13 review, all levels, README**
   - Covers: S13 · Step S13
   - Files: `README.md` (formula section, examples), fixes from the review
   - Tests: every level green (`scripts/test-all.ps1`); CI green after push
   - Depends on: T62–T65
   - Done when: review findings fixed; pushed; CI green.
-  - Commit: —
+  - Commit: 2d6c47e (review fixes + README)
+  - Review (high), 5 findings:
+    - Fixed 4: a save that changes neither formula nor input type isn't re-checked, so operations saved before S13 can still be disabled (spec R4.AC8 updated); a fixed non-true/false `if` condition is refused; the input-type hint appears only when A/B has the wrong type; one wording for type names.
+    - Skipped 1: repeated evaluation of fixed parts (formulas are at most 500 characters).
+  - All levels green: unit 299, integration 111, component 67, E2E 5. E2E was re-run after dropping a stale `GaiaE2E` entry from the two-LocalDB setup on this machine.
+  - Checked in the browser: the hints show under the fields; saving `A ^ B` with Text shows the new message and saves nothing.
 
 ## Submit (always last)
 
