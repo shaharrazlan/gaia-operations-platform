@@ -321,16 +321,17 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: component "R12.AC3: saving a new op adds it to the list"; component "R12.AC6: formula_invalid message shown next to the form and inputs kept"
   - Depends on: T34
   - Done when: `COMP` green.
-  - Commit: (T35)
+  - Commit: 323652d
   - Review: the Add button only appears once the list has loaded (saving into a not-yet-loaded list crashed). Also `styles.css` (form layout).
 
-- [ ] **T36 · Edit form with conflict handling**
+- [x] **T36 · Edit form with conflict handling**
   - Covers: R12.AC4, R12.AC8 · Step S7
   - Files: `OperationForm.jsx`, `OperationForm.test.jsx`, `ManageView.jsx` (Edit button)
   - Tests: component "R12.AC4: system op — formula, kind and input type are read-only"; component "R12.AC8: 409 edit_conflict shows the conflict message, keeps inputs, Reload loads the latest"
   - Depends on: T35
   - Done when: `COMP` green.
-  - Commit: —
+  - Commit: (T36)
+  - Also: edit form reuses `OperationForm` (Id locked when editing; code ops keep formula null); after a conflict, Reload replaces the inputs with the latest saved version; `styles.css` (hint).
 
 ## S12 · Management key   (Should) · ~1 h
 

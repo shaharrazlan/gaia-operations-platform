@@ -74,6 +74,13 @@ describe('OperationForm — add', () => {
     expect(screen.queryByRole('rowheader', { name: 'Mean' })).not.toBeInTheDocument()
   })
 
+  it('T35: Id is editable when adding', async () => {
+    renderManage()
+    const f = await openAddForm()
+
+    expect(within(f).getByLabelText('Id')).toBeEnabled()
+  })
+
   it('T35: there is no Add button until the list has loaded', async () => {
     renderManage({ getOperations: vi.fn(() => new Promise(() => {})) })
 
@@ -89,5 +96,76 @@ describe('OperationForm — add', () => {
 
     expect(api.createOperation).not.toHaveBeenCalled()
     expect(screen.queryByRole('form', { name: /operation/i })).not.toBeInTheDocument()
+  })
+})
+
+async function openEditForm(name) {
+  await userEvent.click(within(await row(name)).getByRole('button', { name: `Edit ${name}` }))
+  return form()
+}
+
+describe('OperationForm — edit', () => {
+  it('R12.AC4: a built-in operation can be renamed; its formula, kind and input type are read-only', async () => {
+    const api = renderManage()
+    const f = await openEditForm('Divide')
+
+    expect(within(f).getByLabelText('Formula')).toBeDisabled()
+    expect(within(f).getByLabelText('Kind')).toBeDisabled()
+    expect(within(f).getByLabelText('Input type')).toBeDisabled()
+    expect(within(f).getByLabelText('Id')).toBeDisabled()
+    await userEvent.clear(within(f).getByLabelText('Name'))
+    await userEvent.type(within(f).getByLabelText('Name'), 'Division')
+    await userEvent.click(within(f).getByRole('button', { name: 'Save' }))
+
+    expect(api.updateOperation).toHaveBeenCalledWith('divide', expect.objectContaining({ name: 'Division', formula: 'A / B', version: 'AAAAAAAAB9I=' }))
+    expect(await row('Division')).toBeInTheDocument()
+    expect(screen.queryByRole('rowheader', { name: 'Divide' })).not.toBeInTheDocument()
+  })
+
+  it('R12.AC4: a built-in code operation keeps formula null when renamed', async () => {
+    const api = renderManage()
+    const f = await openEditForm('Weather today')
+
+    await userEvent.click(within(f).getByRole('button', { name: 'Save' }))
+
+    expect(api.updateOperation).toHaveBeenCalledWith('weather', expect.objectContaining({ formula: null }))
+  })
+
+  it('R12.AC4: a custom operation can change its formula and the list shows it', async () => {
+    const api = renderManage()
+    const f = await openEditForm('Average')
+    expect(within(f).getByLabelText('Formula')).toBeEnabled()
+
+    await userEvent.clear(within(f).getByLabelText('Formula'))
+    await userEvent.type(within(f).getByLabelText('Formula'), '(A + B + 1) / 2')
+    await userEvent.click(within(f).getByRole('button', { name: 'Save' }))
+
+    expect(api.updateOperation).toHaveBeenCalledWith('average', expect.objectContaining({ formula: '(A + B + 1) / 2' }))
+    expect(within(await row('Average')).getByText('(A + B + 1) / 2')).toBeInTheDocument()
+  })
+
+  it('R12.AC8: an edit conflict shows the message, keeps the inputs, and Reload loads the latest version', async () => {
+    const conflict = new ApiError({ status: 409, code: 'edit_conflict', detail: 'Conflict.' })
+    const latest = { ...sampleManagedOperations[3], name: 'Average (renamed elsewhere)', version: 'AAAAAAAACAA=' }
+    const getOperations = vi
+      .fn()
+      .mockResolvedValueOnce(sampleManagedOperations)
+      .mockResolvedValueOnce([...sampleManagedOperations.slice(0, 3), latest, sampleManagedOperations[4]])
+    const api = renderManage({ getOperations, updateOperation: vi.fn().mockRejectedValueOnce(conflict).mockImplementation(async (id, d) => ({ ...d, id, isSystem: false, version: 'v3' })) })
+    const f = await openEditForm('Average')
+    await userEvent.clear(within(f).getByLabelText('Name'))
+    await userEvent.type(within(f).getByLabelText('Name'), 'My mean')
+
+    await userEvent.click(within(f).getByRole('button', { name: 'Save' }))
+
+    expect(await within(f).findByRole('alert')).toHaveTextContent('This operation was changed by someone else. Reload to see the latest version.')
+    expect(within(f).getByLabelText('Name')).toHaveValue('My mean')
+
+    await userEvent.click(within(f).getByRole('button', { name: 'Reload' }))
+
+    expect(await within(f).findByDisplayValue('Average (renamed elsewhere)')).toBeInTheDocument()
+    expect(within(f).queryByRole('alert')).not.toBeInTheDocument()
+    await userEvent.click(within(f).getByRole('button', { name: 'Save' }))
+    expect(api.updateOperation).toHaveBeenLastCalledWith('average', expect.objectContaining({ version: 'AAAAAAAACAA=' }))
   })
 })

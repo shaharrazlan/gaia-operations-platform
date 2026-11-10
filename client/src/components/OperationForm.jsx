@@ -1,19 +1,34 @@
 import { useState } from 'react'
 import { useApi } from '../api/ApiContext.jsx'
+import { toDefinition } from '../api/definitions.js'
 
 const KINDS = ['Arithmetic', 'String', 'Other']
 const INPUT_TYPES = ['Number', 'Text', 'Coordinate']
 
 const EMPTY = { id: '', name: '', kind: 'Arithmetic', fieldALabel: '', fieldBLabel: '', inputType: 'Number', formula: '', isEnabled: true }
 
+export const CONFLICT_MESSAGE = 'This operation was changed by someone else. Reload to see the latest version.'
+
+/** Form values for an operation as the API returned it (a code operation's null formula shows as empty). */
+const valuesOf = (operation) => {
+  const { version: _version, ...values } = toDefinition(operation)
+  return { ...values, formula: values.formula ?? '' }
+}
+
 /**
- * Add a new operation (R12.AC3). The server checks everything; a rejected definition shows its message
- * next to the form, marks the field it names, and keeps what the operator typed (R12.AC6).
+ * Add a new operation (R12.AC3) or edit one (R12.AC4). The server checks everything; a rejected definition
+ * shows its message next to the form, marks the field it names, and keeps what the operator typed (R12.AC6).
+ * A built-in operation's logic (formula, kind, input type) is read-only here, as on the server (R4.AC6).
+ * A save based on an old version is refused by the server; Reload then loads the latest version (R12.AC8).
  */
-export default function OperationForm({ onSaved, onCancel }) {
+export default function OperationForm({ operation = null, onSaved, onCancel }) {
   const api = useApi()
-  const [values, setValues] = useState(EMPTY)
-  const [error, setError] = useState(null) // { message, field }
+  const editing = operation !== null
+  const logicLocked = operation?.isSystem ?? false
+  const isCodeOperation = editing && operation.formula === null
+  const [values, setValues] = useState(editing ? valuesOf(operation) : EMPTY)
+  const [version, setVersion] = useState(operation?.version)
+  const [error, setError] = useState(null) // { message, field, conflict }
   const [busy, setBusy] = useState(false)
 
   const set = (field) => (event) => {
@@ -22,26 +37,46 @@ export default function OperationForm({ onSaved, onCancel }) {
   }
   const invalid = (field) => (error?.field === field ? true : undefined)
 
-  async function handleSubmit(event) {
-    event.preventDefault()
+  async function run(action) {
     setBusy(true)
     setError(null)
     try {
-      onSaved(await api.createOperation(values))
+      await action()
     } catch (e) {
-      setError({ message: e.message, field: e.field ?? null })
+      setError({ message: e.message, field: e.field ?? null, conflict: e.code === 'edit_conflict' })
     } finally {
       setBusy(false)
     }
   }
 
+  function handleSubmit(event) {
+    event.preventDefault()
+    run(async () => {
+      if (!editing) return onSaved(await api.createOperation(values))
+      const definition = { ...values, formula: isCodeOperation ? null : values.formula, version }
+      onSaved(await api.updateOperation(operation.id, definition))
+    })
+  }
+
+  /** After a conflict: replace the form with the latest saved version (the operator's typing is dropped on purpose). */
+  const reload = () =>
+    run(async () => {
+      const latest = (await api.getOperations({ includeDisabled: true })).find((o) => o.id === operation.id)
+      if (!latest) throw new Error('This operation no longer exists. Close the form to see the current list.')
+      setValues(valuesOf(latest))
+      setVersion(latest.version)
+    })
+
+  const title = editing ? `Edit operation: ${operation.name}` : 'Add operation'
+
   return (
-    <form className="operation-form" aria-label="Add operation" onSubmit={handleSubmit}>
-      <h3>Add operation</h3>
+    <form className="operation-form" aria-label={title} onSubmit={handleSubmit}>
+      <h3>{title}</h3>
+      {logicLocked && <p className="hint">Built-in operation: you can change its name, labels and whether it is enabled.</p>}
       <div className="form-grid">
         <label className="field">
           <span>Id</span>
-          <input value={values.id} onChange={set('id')} aria-invalid={invalid('id')} placeholder="e.g. average" autoComplete="off" />
+          <input value={values.id} onChange={set('id')} disabled={editing} aria-invalid={invalid('id')} placeholder="e.g. average" autoComplete="off" />
         </label>
         <label className="field">
           <span>Name</span>
@@ -49,7 +84,7 @@ export default function OperationForm({ onSaved, onCancel }) {
         </label>
         <label className="field">
           <span>Kind</span>
-          <select value={values.kind} onChange={set('kind')}>
+          <select value={values.kind} onChange={set('kind')} disabled={logicLocked} aria-invalid={invalid('kind')}>
             {KINDS.map((k) => (
               <option key={k}>{k}</option>
             ))}
@@ -57,7 +92,7 @@ export default function OperationForm({ onSaved, onCancel }) {
         </label>
         <label className="field">
           <span>Input type</span>
-          <select value={values.inputType} onChange={set('inputType')}>
+          <select value={values.inputType} onChange={set('inputType')} disabled={logicLocked} aria-invalid={invalid('inputType')}>
             {INPUT_TYPES.map((t) => (
               <option key={t}>{t}</option>
             ))}
@@ -73,7 +108,15 @@ export default function OperationForm({ onSaved, onCancel }) {
         </label>
         <label className="field wide">
           <span>Formula</span>
-          <input value={values.formula} onChange={set('formula')} aria-invalid={invalid('formula')} placeholder="e.g. (A + B) / 2" autoComplete="off" spellCheck={false} />
+          <input
+            value={values.formula}
+            onChange={set('formula')}
+            disabled={logicLocked}
+            aria-invalid={invalid('formula')}
+            placeholder={isCodeOperation ? 'built-in (runs code, not a formula)' : 'e.g. (A + B) / 2'}
+            autoComplete="off"
+            spellCheck={false}
+          />
         </label>
         <label className="checkbox">
           <input type="checkbox" checked={values.isEnabled} onChange={set('isEnabled')} />
@@ -82,9 +125,14 @@ export default function OperationForm({ onSaved, onCancel }) {
       </div>
 
       {error && (
-        <p className="message error" role="alert">
-          {error.message}
-        </p>
+        <div className="message error" role="alert">
+          <p>{error.conflict ? CONFLICT_MESSAGE : error.message}</p>
+          {error.conflict && (
+            <button type="button" className="secondary" onClick={reload}>
+              Reload
+            </button>
+          )}
+        </div>
       )}
 
       <div className="form-actions">

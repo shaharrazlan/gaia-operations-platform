@@ -14,7 +14,7 @@ export default function ManageView() {
   const [attempt, setAttempt] = useState(0) // bump to load the list again
   const [notice, setNotice] = useState(null) // the server's message after a rejected change
   const [busyId, setBusyId] = useState(null) // the row being saved
-  const [adding, setAdding] = useState(false) // the add form is open
+  const [form, setForm] = useState(null) // null, or { operation } — a null operation means adding a new one
 
   useEffect(() => {
     let active = true
@@ -49,9 +49,10 @@ export default function ManageView() {
       setOperations((list) => list.map((o) => (o.id === saved.id ? saved : o)))
     })
 
-  function added(saved) {
-    setOperations((list) => [...list, saved].sort((a, b) => a.name.localeCompare(b.name)))
-    setAdding(false)
+  /** A saved operation replaces its row (edit) or joins the list (add), sorted by name like the server's list. */
+  function saved(operation) {
+    setOperations((list) => [...list.filter((o) => o.id !== operation.id), operation].sort((a, b) => a.name.localeCompare(b.name)))
+    setForm(null)
   }
 
   const remove = (operation) => {
@@ -67,14 +68,16 @@ export default function ManageView() {
       <div className="manage-header">
         <h2>Manage operations</h2>
         {/* Only once the list is shown: a new operation is added to that list. */}
-        {operations && !loadError && !adding && (
-          <button type="button" onClick={() => setAdding(true)}>
+        {operations && !loadError && !form && (
+          <button type="button" onClick={() => setForm({ operation: null })}>
             Add operation
           </button>
         )}
       </div>
 
-      {adding && <OperationForm onSaved={added} onCancel={() => setAdding(false)} />}
+      {form && (
+        <OperationForm key={form.operation?.id ?? 'new'} operation={form.operation} onSaved={saved} onCancel={() => setForm(null)} />
+      )}
 
       {notice && (
         <p className="message error" role="alert">
@@ -135,6 +138,9 @@ export default function ManageView() {
                     />
                   </td>
                   <td className="actions">
+                    <button type="button" className="secondary" disabled={busyId === o.id} onClick={() => setForm({ operation: o })} aria-label={`Edit ${o.name}`}>
+                      Edit
+                    </button>
                     {!o.isSystem && (
                       <button type="button" className="secondary" disabled={busyId === o.id} onClick={() => remove(o)} aria-label={`Delete ${o.name}`}>
                         Delete

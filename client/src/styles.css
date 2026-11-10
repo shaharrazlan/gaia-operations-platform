@@ -272,3 +272,9 @@ select:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
+
+.hint {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
