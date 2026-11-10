@@ -468,7 +468,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Done when: `E2E` green.
   - Commit: —
 
-- [ ] **T50 · E2E: error shown** [P]
+- [x] **T50 · E2E: error shown** [P]
   - Covers: R5.AC4 · Step S10
   - Files: `client/e2e/errors.spec.js`
   - Tests: e2e "R5.AC4: 5 ÷ 0 shows the domain error and no result"
