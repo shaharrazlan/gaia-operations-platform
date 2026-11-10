@@ -103,6 +103,31 @@ public class OperationServiceTests
     }
 
     [Fact]
+    public async Task S8_a_run_is_stored_even_if_the_caller_disconnects_while_it_runs()
+    {
+        using var disconnect = new CancellationTokenSource();
+        var runs = new FakeRunRepository();
+        var handler = new CancelsCallerHandler("weather", disconnect);
+        var service = Service(new FakeRepository(Op("weather", null, input: InputType.Coordinate)), runs, new ListLogger<RunRecorder>(), handler);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.ExecuteAsync("weather", "32", "34", disconnect.Token));
+
+        Assert.True(Assert.Single(runs.Runs).IsSuccess);   // the operation did run, so it is history
+    }
+
+    /// <summary>Finishes its work, but the caller goes away in the meantime.</summary>
+    private sealed class CancelsCallerHandler(string id, CancellationTokenSource caller) : IOperationHandler
+    {
+        public string OperationId => id;
+
+        public async Task<string> ExecuteAsync(Value a, Value b, CancellationToken cancellationToken)
+        {
+            await caller.CancelAsync();
+            return "Clear sky";
+        }
+    }
+
+    [Fact]
     public async Task T43_an_unknown_operation_records_no_run()
     {
         var runs = new FakeRunRepository();

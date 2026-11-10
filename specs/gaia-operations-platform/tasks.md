@@ -422,8 +422,10 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: component "R8.AC1: shows previous runs newest first"; component "R8.AC2: shows 'No previous runs' when empty"; component "R9.AC1: shows the monthly count"
   - Depends on: T44
   - Done when: `COMP` green.
-  - Commit: (T45)
+  - Commit: 91fceda
   - Also: the table uses the operation's own Field A/B labels; times shown in Israel time (A7); "once" for a count of 1; `history: null` shows "History is not available right now." (R7.AC3); the panel keeps the operation of the run that produced it. Calculator tests: history shown after Calculate, and hidden after an error. `styles.css`.
+  - S8 review (high): a run is now stored even if the caller disconnects while it runs (the insert no longer uses the request's cancellation; only the history read does) — test added, and the in-memory fake now honours cancellation like the database; the fixed-clock test helper is one shared `tests/Gaia.Core.Tests/FixedTime.cs` (was copied in 3 places). Noted, not changed: a successful execute is now 4 database round trips (find, insert, last 3, count) — measured against NFR1 in T55; the "History is not available right now." note is the honest R7.AC3 behaviour.
+  - Real-app check (servers started by hand from this folder): the dev database got the new table automatically on startup; Divide 7÷2 (API), 9÷3, 5÷0 (error), 10÷4 → result 2.5, "Divide ran 3 times this month." (the failed run not counted), previous runs 9÷3 then 7÷2 (current left out), labelled Dividend/Divisor, times in Israel time.
 
 ## S9 · Server logs   (Could) · ~1 h
 

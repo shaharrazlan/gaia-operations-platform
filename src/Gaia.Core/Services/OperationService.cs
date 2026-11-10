@@ -37,7 +37,7 @@ public sealed class OperationService(IOperationRepository repository, IEnumerabl
         catch (Exception error) when (error is not OperationCanceledException)
         {
             // A failed run is history too (R7.AC1); the caller still gets the original error.
-            await recorder.RecordFailureAsync(operation.Id, fieldA, fieldB, error, Stopwatch.GetElapsedTime(started), cancellationToken);
+            await recorder.RecordFailureAsync(operation.Id, fieldA, fieldB, error, Stopwatch.GetElapsedTime(started));
             throw;
         }
 

@@ -49,11 +49,6 @@ public class CatalogServiceTests
     internal static CatalogService Service(FakeRepository repository) =>
         new(repository, new FixedTime(Now));
 
-    internal sealed class FixedTime(DateTime utcNow) : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => new(utcNow);
-    }
-
     [Theory]
     [InlineData("", "id")]
     [InlineData("A", "id")]                        // too short

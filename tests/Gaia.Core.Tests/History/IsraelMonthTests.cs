@@ -49,9 +49,4 @@ public class IsraelMonthTests
 
         Assert.Equal(Utc(2026, 1, 31, 22, 0), start);
     }
-
-    private sealed class FixedTime(DateTime utcNow) : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => new(utcNow);
-    }
 }

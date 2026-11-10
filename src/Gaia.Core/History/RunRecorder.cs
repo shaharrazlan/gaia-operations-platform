@@ -17,9 +17,8 @@ public sealed partial class RunRecorder(IRunRepository runs, TimeProvider time, 
     public const int PreviousRunCount = 3;
 
     /// <summary>Stores a failed run with its error. Never throws because of the history store.</summary>
-    public Task RecordFailureAsync(string operationId, string? fieldA, string? fieldB, Exception error, TimeSpan duration,
-        CancellationToken cancellationToken = default) =>
-        TryStoreAsync(NewRun(operationId, fieldA, fieldB, null, error, duration), cancellationToken);
+    public Task RecordFailureAsync(string operationId, string? fieldA, string? fieldB, Exception error, TimeSpan duration) =>
+        TryStoreAsync(NewRun(operationId, fieldA, fieldB, null, error, duration));
 
     /// <summary>
     /// Stores a successful run, then returns the 3 successful runs before it (A5: the current run is left out)
@@ -30,7 +29,7 @@ public sealed partial class RunRecorder(IRunRepository runs, TimeProvider time, 
         TimeSpan duration, CancellationToken cancellationToken = default)
     {
         var run = NewRun(operationId, fieldA, fieldB, result, null, duration);
-        if (!await TryStoreAsync(run, cancellationToken))
+        if (!await TryStoreAsync(run))
             return null;
 
         try
@@ -60,11 +59,13 @@ public sealed partial class RunRecorder(IRunRepository runs, TimeProvider time, 
         DurationMs = (int)Math.Min(int.MaxValue, duration.TotalMilliseconds),
     };
 
-    private async Task<bool> TryStoreAsync(OperationRun run, CancellationToken cancellationToken)
+    private async Task<bool> TryStoreAsync(OperationRun run)
     {
         try
         {
-            await runs.AddAsync(run, cancellationToken);
+            // The run already happened, so it is stored even if the caller has gone away meanwhile
+            // (CancellationToken.None); only the history read afterwards stops for a departed caller.
+            await runs.AddAsync(run, CancellationToken.None);
             return true;
         }
         catch (Exception e) when (e is not OperationCanceledException)

@@ -12,6 +12,7 @@ internal sealed class FakeRunRepository : IRunRepository
 
     public Task AddAsync(OperationRun run, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();   // like the real database call
         ThrowIfBroken();
         run.Id = _nextId++;
         Runs.Add(run);
@@ -21,6 +22,7 @@ internal sealed class FakeRunRepository : IRunRepository
     public Task<IReadOnlyList<OperationRun>> LatestSuccessfulAsync(string operationId, long exceptRunId, int count,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         ThrowIfBroken();
         return Task.FromResult<IReadOnlyList<OperationRun>>(Runs
             .Where(r => r.OperationId == operationId && r.IsSuccess && r.Id != exceptRunId)
@@ -30,6 +32,7 @@ internal sealed class FakeRunRepository : IRunRepository
 
     public Task<int> CountSuccessfulSinceAsync(string operationId, DateTime sinceUtc, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         ThrowIfBroken();
         return Task.FromResult(Runs.Count(r => r.OperationId == operationId && r.IsSuccess && r.CreatedAtUtc >= sinceUtc));
     }
@@ -52,11 +55,4 @@ internal sealed class ListLogger<T> : ILogger<T>
 
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
         Func<TState, Exception?, string> formatter) => Entries.Add((logLevel, formatter(state, exception), exception));
-}
-
-internal sealed class FixedTime(DateTime utcNow) : TimeProvider
-{
-    public DateTime UtcNow { get; set; } = utcNow;
-
-    public override DateTimeOffset GetUtcNow() => new(UtcNow);
 }
