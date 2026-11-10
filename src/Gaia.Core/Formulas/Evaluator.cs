@@ -14,9 +14,11 @@ public static class Evaluator
         NumberNode n => new NumberValue(n.Value),
         TextNode t => new TextValue(t.Value),
         VariableNode v => v.Name == "A" ? a : b,
-        UnaryNode u => Evaluate(u.Operand, a, b) is NumberValue x
-            ? new NumberValue(-x.Number)
-            : throw new DomainException("'-' can only be applied to a number."),
+        UnaryNode u => Evaluate(u.Operand, a, b) switch
+        {
+            NumberValue x => new NumberValue(-x.Number),
+            var other => throw new DomainException(OperatorRules.NegateMismatch(u.Position, Describe(other))),
+        },
         BinaryNode op => EvaluateBinary(op, a, b),
         CallNode { Name: "if" } call => EvaluateIf(call, a, b),
         CallNode call => Functions.Invoke(call.Name, call.Arguments.Select(arg => Evaluate(arg, a, b)).ToList()),
@@ -45,8 +47,7 @@ public static class Evaluator
             ("<" or "<=" or ">" or ">=", NumberValue x, NumberValue y) => Compare(op.Operator, x.Number.CompareTo(y.Number)),
             ("<" or "<=" or ">" or ">=", TextValue x, TextValue y) => Compare(op.Operator, string.CompareOrdinal(x.Text, y.Text)),
 
-            _ => throw new DomainException(
-                $"Operator '{op.Operator}' at position {op.Position} can't combine {Describe(left)} and {Describe(right)}."),
+            _ => throw new DomainException(OperatorRules.Mismatch(op.Operator, op.Position, Describe(left), Describe(right))),
         };
     }
 

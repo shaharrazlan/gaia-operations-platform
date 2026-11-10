@@ -9,37 +9,52 @@ namespace Gaia.Core.Formulas;
 /// </summary>
 public static class Functions
 {
-    /// <summary>Invoke is null for a special form the Evaluator runs itself (only "if").</summary>
-    private sealed record Definition(int MinArgs, int MaxArgs, Func<IReadOnlyList<Value>, string, Value>? Invoke);
+    /// <summary>
+    /// Params are the argument types (the last one repeats for min, max and concat); Returns is the result type.
+    /// Both are used by the save-time TypeChecker (R4.AC8). Invoke is null for a special form the Evaluator runs itself (only "if").
+    /// </summary>
+    private sealed record Definition(int MinArgs, int MaxArgs, FormulaType[] Params, FormulaType Returns,
+        Func<IReadOnlyList<Value>, string, Value>? Invoke);
+
+    private const FormulaType N = FormulaType.Number, T = FormulaType.Text, B = FormulaType.Bool, AnyType = FormulaType.Any;
 
     private static readonly Dictionary<string, Definition> All = new(StringComparer.Ordinal)
     {
         // numbers
-        ["sqrt"] = new(1, 1, (args, fn) => Evaluator.Number(Math.Sqrt(Num(args, 0, fn)))),
-        ["abs"] = new(1, 1, (args, fn) => Evaluator.Number(Math.Abs(Num(args, 0, fn)))),
-        ["floor"] = new(1, 1, (args, fn) => Evaluator.Number(Math.Floor(Num(args, 0, fn)))),
-        ["ceil"] = new(1, 1, (args, fn) => Evaluator.Number(Math.Ceiling(Num(args, 0, fn)))),
-        ["round"] = new(1, 2, Round),
-        ["min"] = new(2, 10, (args, fn) => Evaluator.Number(args.Select((_, i) => Num(args, i, fn)).Min())),
-        ["max"] = new(2, 10, (args, fn) => Evaluator.Number(args.Select((_, i) => Num(args, i, fn)).Max())),
+        ["sqrt"] = new(1, 1, [N], N, (args, fn) => Evaluator.Number(Math.Sqrt(Num(args, 0, fn)))),
+        ["abs"] = new(1, 1, [N], N, (args, fn) => Evaluator.Number(Math.Abs(Num(args, 0, fn)))),
+        ["floor"] = new(1, 1, [N], N, (args, fn) => Evaluator.Number(Math.Floor(Num(args, 0, fn)))),
+        ["ceil"] = new(1, 1, [N], N, (args, fn) => Evaluator.Number(Math.Ceiling(Num(args, 0, fn)))),
+        ["round"] = new(1, 2, [N, N], N, Round),
+        ["min"] = new(2, 10, [N], N, (args, fn) => Evaluator.Number(args.Select((_, i) => Num(args, i, fn)).Min())),
+        ["max"] = new(2, 10, [N], N, (args, fn) => Evaluator.Number(args.Select((_, i) => Num(args, i, fn)).Max())),
 
         // text
-        ["upper"] = new(1, 1, (args, fn) => Evaluator.Text(Text(args, 0, fn).ToUpperInvariant())),
-        ["lower"] = new(1, 1, (args, fn) => Evaluator.Text(Text(args, 0, fn).ToLowerInvariant())),
-        ["trim"] = new(1, 1, (args, fn) => Evaluator.Text(Text(args, 0, fn).Trim())),
+        ["upper"] = new(1, 1, [T], T, (args, fn) => Evaluator.Text(Text(args, 0, fn).ToUpperInvariant())),
+        ["lower"] = new(1, 1, [T], T, (args, fn) => Evaluator.Text(Text(args, 0, fn).ToLowerInvariant())),
+        ["trim"] = new(1, 1, [T], T, (args, fn) => Evaluator.Text(Text(args, 0, fn).Trim())),
         // Counts what a person sees as characters (an emoji or a letter with accents = 1), not UTF-16 units.
-        ["len"] = new(1, 1, (args, fn) => new NumberValue(new StringInfo(Text(args, 0, fn)).LengthInTextElements)),
-        ["concat"] = new(1, 10, (args, _) => Evaluator.Text(string.Concat(args.Select(ResultFormatter.Format)))),
-        ["contains"] = new(2, 2, (args, fn) => new BoolValue(Text(args, 0, fn).Contains(Text(args, 1, fn), StringComparison.Ordinal))),
-        ["count"] = new(2, 2, Count),
-        ["replace"] = new(3, 3, Replace),
+        ["len"] = new(1, 1, [T], N, (args, fn) => new NumberValue(new StringInfo(Text(args, 0, fn)).LengthInTextElements)),
+        ["concat"] = new(1, 10, [AnyType], T, (args, _) => Evaluator.Text(string.Concat(args.Select(ResultFormatter.Format)))),
+        ["contains"] = new(2, 2, [T, T], B, (args, fn) => new BoolValue(Text(args, 0, fn).Contains(Text(args, 1, fn), StringComparison.Ordinal))),
+        ["count"] = new(2, 2, [T, T], N, Count),
+        ["replace"] = new(3, 3, [T, T, T], T, Replace),
 
         // Special form: the Evaluator runs it lazily (only the chosen branch). Listed so the parser
         // knows its name and argument count.
-        ["if"] = new(3, 3, null),
+        ["if"] = new(3, 3, [B, AnyType, AnyType], AnyType, null),
     };
 
     public static IReadOnlyCollection<string> Names => All.Keys;
+
+    /// <summary>The type argument <paramref name="index"/> must have (the last parameter type repeats).</summary>
+    internal static FormulaType ParameterType(string name, int index)
+    {
+        var parameters = All[name].Params;
+        return parameters[Math.Min(index, parameters.Length - 1)];
+    }
+
+    internal static FormulaType ReturnType(string name) => All[name].Returns;
 
     /// <summary>Called by the parser, so unknown functions and wrong argument counts fail at save time.</summary>
     internal static void CheckCall(string name, int argumentCount, int position)

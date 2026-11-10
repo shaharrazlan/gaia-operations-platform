@@ -42,7 +42,7 @@ public sealed partial class CatalogService(IOperationRepository repository, Time
                 "Id must be 2–50 characters: lower-case letters, digits and '-', starting with a letter (e.g. 'average').", "id");
 
         var details = CheckDetails(input);
-        var formula = CheckFormula(input.Formula);
+        var formula = CheckFormula(input.Formula, details.InputType);
 
         // Ids of deleted operations stay taken: their history (R7) still points at them.
         if (await repository.FindAsync(id, cancellationToken) is not null)
@@ -92,7 +92,7 @@ public sealed partial class CatalogService(IOperationRepository repository, Time
         }
         else
         {
-            formula = CheckFormula(input.Formula);
+            formula = CheckFormula(input.Formula, details.InputType);
         }
 
         return await repository.UpdateAsync(new OperationDefinition
@@ -168,13 +168,13 @@ public sealed partial class CatalogService(IOperationRepository repository, Time
         Required(input.FieldBLabel, "fieldBLabel", "Field B label", MaxLabelLength),
         Defined(input.InputType, "inputType", "Input type"));
 
-    /// <summary>A custom operation always has a formula, and it must parse (R4.AC4).</summary>
-    private static string CheckFormula(string? formula)
+    /// <summary>A custom operation always has a formula; it must parse (R4.AC4) and fit its input type (R4.AC8, R4.AC9).</summary>
+    private static string CheckFormula(string? formula, InputType inputType)
     {
         if (string.IsNullOrWhiteSpace(formula))
             throw new ValidationException("Formula is required, e.g. (A + B) / 2.", "formula", ErrorCodes.FormulaInvalid);
         var trimmed = formula.Trim();
-        FormulaEngine.Validate(trimmed);   // throws formula_invalid with the position of the problem
+        FormulaEngine.Validate(trimmed, inputType);   // throws formula_invalid with the position of the problem
         return trimmed;
     }
 

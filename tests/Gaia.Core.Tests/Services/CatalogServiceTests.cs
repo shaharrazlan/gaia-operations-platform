@@ -266,6 +266,32 @@ public class CatalogServiceTests
     }
 
     [Fact]
+    public async Task R4_AC8_creating_A_power_B_with_text_inputs_is_rejected_and_nothing_is_saved()
+    {
+        var repository = new FakeRepository();
+
+        var error = await Assert.ThrowsAsync<ValidationException>(() =>
+            Service(repository).CreateAsync(Input(formula: "A ^ B", inputType: InputType.Text)));
+
+        Assert.Equal(ErrorCodes.FormulaInvalid, error.Code);
+        Assert.Contains("because the input type is Text", error.Message);
+        Assert.Empty(repository.Rows);
+    }
+
+    [Fact]
+    public async Task R4_AC8_changing_only_the_input_type_is_checked_against_the_formula()
+    {
+        var original = Op("avg", "(A + B) / 2");
+        var repository = new FakeRepository(original);
+
+        var error = await Assert.ThrowsAsync<ValidationException>(() =>
+            Service(repository).UpdateAsync("avg", Same(original) with { InputType = InputType.Text }));
+
+        Assert.Equal(ErrorCodes.FormulaInvalid, error.Code);
+        Assert.Same(original, repository.Rows[0]);
+    }
+
+    [Fact]
     public async Task R4_AC4_an_update_with_a_bad_formula_is_rejected_and_nothing_changes()
     {
         var original = Op("avg", "(A + B) / 2");

@@ -50,7 +50,7 @@ public class FormulaEngineTests
     [Fact]
     public void T14_Validate_returns_error_with_position_for_a_bad_formula()
     {
-        var error = Assert.Throws<ValidationException>(() => FormulaEngine.Validate("A + * B"));
+        var error = Assert.Throws<ValidationException>(() => FormulaEngine.Validate("A + * B", InputType.Number));
 
         Assert.Equal(ErrorCodes.FormulaInvalid, error.Code);
         Assert.Contains("position 5", error.Message);
@@ -59,7 +59,7 @@ public class FormulaEngineTests
     [Fact]
     public void T14_Validate_accepts_a_good_formula()
     {
-        FormulaEngine.Validate("sqrt(A*A + B*B)");
+        FormulaEngine.Validate("sqrt(A*A + B*B)", InputType.Number);
     }
 
     [Fact]

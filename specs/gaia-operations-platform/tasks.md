@@ -571,13 +571,14 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 ## S13 · Formula checks on save + form help   (Should) · ~1.5 h — added 2026-11-10 after user testing
 
-- [ ] **T62 · Type check on save (TypeChecker)**
+- [x] **T62 · Type check on save (TypeChecker)**
   - Covers: R4.AC8 · Step S13
   - Files: `src/Gaia.Core/Formulas/TypeChecker.cs`, `src/Gaia.Core/Formulas/OperatorRules.cs`, `src/Gaia.Core/Formulas/FormulaEngine.cs`, `src/Gaia.Core/Formulas/Evaluator.cs` (message), `src/Gaia.Core/Services/CatalogService.cs`, `tests/Gaia.Core.Tests/Formulas/TypeCheckerTests.cs`, `tests/Gaia.Core.Tests/Formulas/FormulaEngineTests.cs`, `tests/Gaia.Core.Tests/Operations/SeedOperationsTests.cs`, `tests/Gaia.Core.Tests/Services/CatalogServiceTests.cs`
   - Tests: unit "R4.AC8: <case> is rejected" (table), "R4.AC8: <case> is accepted" (table), "R4.AC8: seeded formulas pass with their input type", "R4.AC8: changing only the input type is checked"
   - Depends on: —
   - Done when: tests pass; `dotnet test tests/Gaia.Core.Tests` green.
   - Commit: —
+  - Note: red seen first (26 tests: no error raised). The function table now also lists each function's parameter and result types (`Functions.cs`, not in the file list) so the whitelist stays the single source. The run-time message uses the same wording (`OperatorRules`). Unit 276/276.
 
 - [ ] **T63 · Always-fails check (ConstantCheck)**
   - Covers: R4.AC9 · Step S13

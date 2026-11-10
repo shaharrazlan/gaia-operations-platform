@@ -6,10 +6,16 @@ namespace Gaia.Core.Tests.Operations;
 public class SeedOperationsTests
 {
     [Fact]
-    public void T15_every_seeded_formula_is_valid()
+    public void R4_AC8_every_seeded_formula_is_valid_with_its_own_input_type()
     {
+        var failures = new List<string>();
         foreach (var operation in SeedOperations.Create().Where(o => o.Formula is not null))
-            FormulaEngine.Validate(operation.Formula!);
+        {
+            try { FormulaEngine.Validate(operation.Formula!, operation.InputType); }
+            catch (Exception e) { failures.Add($"{operation.Id}: {e.Message}"); }
+        }
+
+        Assert.Empty(failures);
     }
 
     [Fact]
