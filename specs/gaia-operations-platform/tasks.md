@@ -512,6 +512,52 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Whole-codebase review (high; simplify and security done as angles of it — `/security-review` needs a GitHub remote). **Fixed:** connection strings wait up to 60 s for LocalDB to start (the 15 s default could crash the API at startup — test added); a management key typed in another keyboard layout now says "Invalid management key" instead of "Service unavailable" (test added). **For the README (T56), by design / known limits:** results smaller than 1e-15 show as 0 (15-decimal cap); very large numeric results (> 200 digits) can't be typed back as input; operation names need not be unique; outside Development/E2E the database must be migrated by hand (`dotnet ef database update`); Swagger is served in every environment. Security pass: no vulnerable NuGet/npm packages, no raw HTML/`eval`/raw SQL with input, no secrets beyond the documented dev/E2E/test keys.
   - Test speed: one test class takes ~4 s (database setup ~1.3 s), all 17 classes ~10–14 s; the multi-minute runs were LocalDB being slow, not the per-class databases — no restructure.
   - **For T55:** after a full integration run (≈18 databases created and dropped), LocalDB twice hung the E2E server's start (its database delete/create); `sqllocaldb stop`/`start` fixed it each time. A reviewer running `test-all.ps1` could hit this — decide in T55 (e.g. E2E resets its data instead of dropping the database, and/or a README note).
-- [ ] **T55 · Verify against the spec**: run `sdd-verify`.
+- [x] **T55 · Verify against the spec**: run `sdd-verify`.
+  - Commit: —
+  - Result in `verify.md`: ⚠️ ready with known gaps. Every AC passes; fresh clone: unit 235, integration 106, component 66, E2E 5, lint and builds clean. NFR1 measured: warm execute with history, median 18 ms / p95 25 ms. `run.ps1` launched and the main flows walked by hand (API + browser). The LocalDB stall is low system memory (`FAIL_PAGE_ALLOCATION` in the LocalDB log), not the per-class test databases. Gaps G1–G5 became T57–T61. For T56: fix the plan's `fakeApi.js` path (it is `client/src/test/fakeApi.js`).
   - Carry-overs to check here (noted during S1–S5): measure **warm** execute latency vs NFR1 (< 200 ms; the first call after start took 1–3 s, cold start); actually launch `scripts/run.ps1` (not yet run — it opens windows); fresh-clone run per NFR3. From S8–S9: LocalDB degrades over a long session (test databases time out while being created; integration runs went from 10 s to 2–4 min) — a `sqllocaldb stop`/`start` fixes it; consider fewer test databases (one per run instead of one per test class) and a README troubleshooting note.
+## Verify fixes (from verify.md, 2026-11-10)
+
+- [ ] **T57 · Client install works on a fresh clone (G1)**
+  - Covers: NFR3 · Step S10
+  - Files: `scripts/run.ps1`, `README.md` (Run section)
+  - Tests: manual: in a fresh clone with no `client/node_modules`, `scripts/run.ps1` installs the packages and starts both servers; the README's manual steps work as written.
+  - Depends on: —
+  - Done when: `npm --prefix client install` is replaced by a form that works on npm 11 (e.g. `npm ci --prefix client`, which installs exactly the lock file) in both places; fresh-clone run passes.
+  - Commit: —
+
+- [ ] **T58 · test-all.ps1 installs client packages (G2)**
+  - Covers: NFR3, R13.AC6 · Step S10
+  - Files: `scripts/test-all.ps1`, `README.md` (Tests section)
+  - Tests: manual: `test-all.ps1` in a fresh clone gets past "Client build" with no other step first.
+  - Depends on: T57
+  - Done when: the script runs `npm ci --prefix client` when `client/node_modules` is missing; the README says a first run installs the client packages and Playwright's Chromium (`npx --prefix client playwright install chromium`), and that the R13.AC6 build scan runs only after a client build.
+  - Commit: —
+
+- [ ] **T59 · LocalDB stall after the integration run (G3)**
+  - Covers: NFR3 · Step S10
+  - Files: `scripts/test-all.ps1`, `README.md` (Troubleshooting)
+  - Tests: manual: `test-all.ps1` twice in a row passes on this machine.
+  - Depends on: T58
+  - Done when: before E2E the script frees memory held by idle build servers (`dotnet build-server shutdown`); the README has a Troubleshooting entry (symptoms: 503 `database_unavailable`, Playwright "Timed out waiting … webServer"; fix: `sqllocaldb stop MSSQLLocalDB` then `sqllocaldb start MSSQLLocalDB`; cause: low free memory). If it still fails twice in a row, record it as a known limitation instead.
+  - Commit: —
+
+- [ ] **T60 · Integration test: a disabled operation can't be executed (G4)**
+  - Covers: R2.AC2, R4.AC3 · Step S6
+  - Files: `tests/Gaia.Api.Tests/Api/ManagementTests.cs`
+  - Tests: integration "R2_AC2_executing_a_disabled_operation_returns_404_operation_not_found"
+  - Depends on: —
+  - Done when: the test passes; `dotnet test tests/Gaia.Api.Tests` green.
+  - Commit: —
+
+- [ ] **T61 · Integration test: deleting an operation keeps its runs (G5)**
+  - Covers: R4.AC3, R7 · Step S8
+  - Files: `tests/Gaia.Api.Tests/Api/HistoryTests.cs`
+  - Tests: integration "R4_AC3_deleting_an_operation_keeps_its_runs"
+  - Depends on: —
+  - Done when: the test passes; `dotnet test tests/Gaia.Api.Tests` green.
+  - Commit: —
+
+## Submit (always last)
+
 - [ ] **T56 · Polish & submit**: README (setup, run, test commands, formula language reference, interpretations A5/A8/A9, Security section, known limitations, trade-offs), no secrets beyond the documented dev key, clean history, Submission notes in plan.md, create the **private** GitHub repo and push (needs your OK), invite the reviewer.
