@@ -62,6 +62,15 @@ describe('KeyGate', () => {
     expect(scoped.getOperations).toHaveBeenCalledWith({ includeDisabled: true })
   })
 
+  it('T54: a key typed in another keyboard layout (e.g. Hebrew) is reported as invalid, not as "Service unavailable"', async () => {
+    const { scoped } = renderGate()
+
+    await enterKey('מפתח')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Invalid management key')
+    expect(scoped.getOperations).not.toHaveBeenCalled()
+  })
+
   it('T39: a server that cannot be reached is reported as such, not as a wrong key', async () => {
     renderGate({ getOperations: vi.fn().mockRejectedValue(new ServiceUnavailableError()) })
 

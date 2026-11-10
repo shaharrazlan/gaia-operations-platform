@@ -61,6 +61,12 @@ export default function KeyGate({ children }) {
 
   async function unlock(event) {
     event.preventDefault()
+    // An HTTP header can only carry plain characters; a key typed in another keyboard layout (e.g. Hebrew)
+    // can't be the right one, and sending it would fail as if the server were down.
+    if (!/^[\x20-\x7E]+$/.test(typed)) {
+      setError('Invalid management key.')
+      return
+    }
     setBusy(true)
     setError(null)
     try {
