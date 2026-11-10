@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useApi } from '../api/ApiContext.jsx'
 import { toDefinition } from '../api/definitions.js'
+import OperationForm from '../components/OperationForm.jsx'
 
 /**
  * The operator screen (R12): every operation, enabled or not, with enable/disable and delete.
@@ -13,6 +14,7 @@ export default function ManageView() {
   const [attempt, setAttempt] = useState(0) // bump to load the list again
   const [notice, setNotice] = useState(null) // the server's message after a rejected change
   const [busyId, setBusyId] = useState(null) // the row being saved
+  const [adding, setAdding] = useState(false) // the add form is open
 
   useEffect(() => {
     let active = true
@@ -47,6 +49,11 @@ export default function ManageView() {
       setOperations((list) => list.map((o) => (o.id === saved.id ? saved : o)))
     })
 
+  function added(saved) {
+    setOperations((list) => [...list, saved].sort((a, b) => a.name.localeCompare(b.name)))
+    setAdding(false)
+  }
+
   const remove = (operation) => {
     if (!window.confirm(`Delete "${operation.name}"? It disappears from the calculator; its history is kept.`)) return
     return change(operation, async () => {
@@ -57,7 +64,17 @@ export default function ManageView() {
 
   return (
     <div className="manage">
-      <h2>Manage operations</h2>
+      <div className="manage-header">
+        <h2>Manage operations</h2>
+        {/* Only once the list is shown: a new operation is added to that list. */}
+        {operations && !loadError && !adding && (
+          <button type="button" onClick={() => setAdding(true)}>
+            Add operation
+          </button>
+        )}
+      </div>
+
+      {adding && <OperationForm onSaved={added} onCancel={() => setAdding(false)} />}
 
       {notice && (
         <p className="message error" role="alert">

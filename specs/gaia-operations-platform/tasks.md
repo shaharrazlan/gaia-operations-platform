@@ -312,16 +312,17 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: component "R12.AC2: lists enabled and disabled ops, 'built-in' for system code ops"; component "R12.AC5: disable/enable toggle calls API and updates the row"
   - Depends on: T33
   - Done when: `COMP` green.
-  - Commit: (T34)
+  - Commit: 021b18d
   - Also: Delete button with a confirmation for custom ops (R4.AC3 through the UI — no task had it, the plan's screen lists it); a rejected toggle/delete shows the server message and reloads the list; `src/api/definitions.js` (`toDefinition`, shared with the form); `httpApi.test.js` covers the new calls; table styles.
 
-- [ ] **T35 · Add-operation form**
+- [x] **T35 · Add-operation form**
   - Covers: R12.AC3, R12.AC6 · Step S7
   - Files: `client/src/components/OperationForm.jsx`, `OperationForm.test.jsx`, `ManageView.jsx` (Add button)
   - Tests: component "R12.AC3: saving a new op adds it to the list"; component "R12.AC6: formula_invalid message shown next to the form and inputs kept"
   - Depends on: T34
   - Done when: `COMP` green.
-  - Commit: —
+  - Commit: (T35)
+  - Review: the Add button only appears once the list has loaded (saving into a not-yet-loaded list crashed). Also `styles.css` (form layout).
 
 - [ ] **T36 · Edit form with conflict handling**
   - Covers: R12.AC4, R12.AC8 · Step S7
