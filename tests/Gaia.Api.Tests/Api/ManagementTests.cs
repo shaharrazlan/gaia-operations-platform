@@ -80,6 +80,51 @@ public class ManagementTests(GaiaApiFactory factory) : IClassFixture<GaiaApiFact
     }
 
     [Fact]
+    public async Task R4_AC8_POST_A_power_B_with_text_input_is_400_and_the_catalog_is_unchanged()
+    {
+        var id = NewId("power-text");
+        var body = JsonSerializer.SerializeToNode(Definition(id, formula: "A ^ B"))!;
+        body["inputType"] = "Text";
+
+        var response = await _client.PostAsJsonAsync("/api/operations", body);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("formula_invalid", problem.GetProperty("code").GetString());
+        Assert.Equal("formula", problem.GetProperty("field").GetString());
+        Assert.Contains("needs two numbers", problem.GetProperty("detail").GetString());
+        Assert.Contains("because the input type is Text", problem.GetProperty("detail").GetString());
+        var all = await _client.GetFromJsonAsync<JsonElement[]>("/api/operations?includeDisabled=true");
+        Assert.DoesNotContain(all!, o => o.GetProperty("id").GetString() == id);
+    }
+
+    [Fact]
+    public async Task R4_AC8_PUT_changing_only_the_input_type_to_text_is_400()
+    {
+        var id = NewId("mean-type");
+        var created = await CreateAsync(id);   // (A + B) / 2, input type Number
+        var body = JsonSerializer.Deserialize<Dictionary<string, object?>>(created.GetRawText())!;
+        body["inputType"] = "Text";
+
+        var response = await _client.PutAsJsonAsync($"/api/operations/{id}", body);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("formula_invalid", await CodeOf(response));
+        Assert.Equal("5", await ExecuteAsync(id, "4", "6"));   // unchanged: still a number formula
+    }
+
+    [Fact]
+    public async Task R4_AC9_POST_dividing_by_a_fixed_zero_is_400()
+    {
+        var response = await _client.PostAsJsonAsync("/api/operations", Definition(NewId("div-zero"), formula: "A / 0"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("formula_invalid", problem.GetProperty("code").GetString());
+        Assert.Contains("always divides by 0", problem.GetProperty("detail").GetString());
+    }
+
+    [Fact]
     public async Task R4_AC4_a_duplicate_id_is_409_duplicate_id()
     {
         var response = await _client.PostAsJsonAsync("/api/operations", Definition("divide"));

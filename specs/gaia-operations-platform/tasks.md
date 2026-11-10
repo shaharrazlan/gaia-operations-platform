@@ -589,13 +589,14 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Commit: —
   - Note: red seen first (9 rejected cases passed through). Fixed parts are run now by the same Evaluator/Functions, so messages match the Calculator's; a fixed `if` condition checks only the branch that can run; function calls with fixed arguments are tried with a sample (1 or "x") for A/B parts. Unit 296/296.
 
-- [ ] **T64 · Integration: the API refuses formulas that can't work**
+- [x] **T64 · Integration: the API refuses formulas that can't work**
   - Covers: R4.AC8, R4.AC9 · Step S13
   - Files: `tests/Gaia.Api.Tests/Api/ManagementTests.cs`
   - Tests: integration "R4_AC8_POST_A_power_B_with_text_input_is_400_and_the_catalog_is_unchanged", "R4_AC8_PUT_changing_only_the_input_type_to_text_is_400", "R4_AC9_POST_dividing_by_a_fixed_zero_is_400"
   - Depends on: T63
   - Done when: tests pass; integration suite green.
   - Commit: —
+  - Note: the logic was built (and seen red) in T62/T63, so these API tests passed on the first run. Run in Release because a leftover dev API locked the Debug build folder. Integration 111/111.
 
 - [ ] **T65 · Form field help**
   - Covers: R12.AC9 · Step S13
