@@ -1,0 +1,47 @@
+# Runs on every push and pull request: the server unit tests and the client lint, build and component tests.
+# The integration and E2E tests need SQL Server (LocalDB) and run locally with scripts/test-all.ps1 (see README).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch cancels the run that is still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    name: Server (build + unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      # Builds every project, including the integration tests, so a compile error anywhere fails CI.
+      - run: dotnet build Gaia.sln --configuration Release
+      - run: dotnet test tests/Gaia.Core.Tests --configuration Release --no-build
+
+  client:
+    name: Client (lint + build + component tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'   # the minimum the README asks for
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      # Build before the tests: the component run scans the build for leaked management keys (R13.AC6).
+      - run: npm run build
+      - run: npm test -- --run
