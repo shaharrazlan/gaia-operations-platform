@@ -1,5 +1,7 @@
 # Gaia Operations Platform
 
+[![CI](https://github.com/shaharrazlan/gaia-operations-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/shaharrazlan/gaia-operations-platform/actions/workflows/ci.yml)
+
 A platform that runs **operations on two inputs**, Field A and Field B. Operations are arithmetic, text, or "other", such as today's weather for a latitude/longitude. Operators can add, change or remove operations at runtime, as safe formulas, with no code change or redeploy.
 
 - **Server:** ASP.NET Core (.NET 10, C#). All business logic, the REST API, and SQL Server through EF Core.
@@ -69,6 +71,7 @@ npm --prefix client run dev
 - **Leaked-key scan.** The component run includes a scan of the client build for leaked keys (R13.AC6). It runs only when a build exists, so run `npm --prefix client run build` first (`test-all.ps1` does).
 - **E2E isolation.** E2E runs the API on its own port (5081) with its own database (`GaiaE2E`, recreated on every run) and a fake weather provider, so it never touches your dev data or the internet.
 - **LocalDB restart.** Before the E2E tests, `test-all.ps1` restarts the LocalDB instance (see [Troubleshooting](#troubleshooting)).
+- **CI.** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push and pull request, on Ubuntu: it builds the whole solution, runs the unit tests, then the client lint, build and component tests. The integration and E2E tests need SQL Server and run locally.
 
 ## API
 

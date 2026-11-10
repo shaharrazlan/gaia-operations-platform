@@ -497,13 +497,19 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 ## S11 · CI   (Should) · ~0.5 h
 
-- [ ] **T53 · GitHub Actions workflow**
+- [x] **T53 · GitHub Actions workflow**
   - Covers: quality signal · Step S11
   - Files: `.github/workflows/ci.yml` (unit + component on push)
   - Tests: workflow passes on GitHub after push
   - Depends on: T52, T56 (repo exists)
   - Done when: green run on GitHub.
-  - Commit: —
+  - Commit: 52e9d88
+  - **Setup.** Two parallel jobs on `ubuntu-latest`, on every push and pull request (read-only permissions; a newer push cancels an older run):
+    - **Server:** `dotnet build Gaia.sln -c Release` (so the integration-test project must compile too), then the unit tests.
+    - **Client:** Node 22 (the README minimum), `npm ci`, lint, build, then the component tests. The build comes first so the R13.AC6 scan of `client/dist` runs.
+  - **Actions.** checkout@v7, setup-dotnet@v6, setup-node@v7 (latest majors, checked on GitHub).
+  - **First run green** (run 42811438224, ~33 s): 235 unit; 66/66 component, none skipped. Release build checked locally first (0 warnings).
+  - **README.** CI badge, plus a CI line in the Tests section.
 
 ## Review & verify (always last)
 
