@@ -484,7 +484,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Done when: `E2E` green.
   - Commit: —
 
-- [ ] **T52 · E2E: history panel** [P]
+- [x] **T52 · E2E: history panel** [P]
   - Covers: R8.AC1 · Step S10
   - Files: `client/e2e/history.spec.js`
   - Tests: e2e "R8.AC1: second calculation shows the first in the history panel"
