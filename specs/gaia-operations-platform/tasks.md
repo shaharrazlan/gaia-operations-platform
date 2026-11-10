@@ -476,7 +476,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Done when: `E2E` green.
   - Commit: —
 
-- [ ] **T51 · E2E: add a formula and use it** [P]
+- [x] **T51 · E2E: add a formula and use it** [P]
   - Covers: R4.AC1, R12.AC3, R12.AC7, R13.AC4 · Step S10
   - Files: `client/e2e/manage.spec.js`
   - Tests: e2e "R12.AC3: unlock with key, add 'triple' = A * 3 + B, calculate it in the Calculator"
