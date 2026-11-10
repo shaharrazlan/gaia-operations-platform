@@ -466,7 +466,8 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: e2e "R5.AC3: 7 ÷ 2 shows 3.5"
   - Depends on: T48
   - Done when: `E2E` green.
-  - Commit: —
+  - Commit: 6e91661
+  - Also: `client/e2e/helpers.js` (pick an operation, fill both fields, calculate; read the E2E management key from `appsettings.E2E.json` so it isn't copied into tests). All 5 E2E tests passed on the first run (E2E tests are written after the UI they drive — no red step, per the testing rules).
 
 - [x] **T50 · E2E: error shown** [P]
   - Covers: R5.AC4 · Step S10
@@ -474,7 +475,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: e2e "R5.AC4: 5 ÷ 0 shows the domain error and no result"
   - Depends on: T48
   - Done when: `E2E` green.
-  - Commit: —
+  - Commit: 6b5340f
 
 - [x] **T51 · E2E: add a formula and use it** [P]
   - Covers: R4.AC1, R12.AC3, R12.AC7, R13.AC4 · Step S10
@@ -482,7 +483,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: e2e "R12.AC3: unlock with key, add 'triple' = A * 3 + B, calculate it in the Calculator"
   - Depends on: T48
   - Done when: `E2E` green.
-  - Commit: —
+  - Commit: 6456356
 
 - [x] **T52 · E2E: history panel** [P]
   - Covers: R8.AC1 · Step S10
@@ -490,7 +491,9 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: e2e "R8.AC1: second calculation shows the first in the history panel"
   - Depends on: T48
   - Done when: `E2E` green.
-  - Commit: —
+  - Commit: cf6dd52
+  - Note: uses Subtract, which no other E2E test runs, so the history in the fresh E2E database belongs to this test only.
+  - S10 review (high): the E2E helper now finds Field A/B by role (`textbox`), not by CSS class (testing rule). Accepted: the history E2E would fail once if run exactly across an Israel month boundary; E2E and dev runs share `src/Gaia.Api/logs`. All levels green: unit 235, integration 104, component 65, E2E 5. Integration took ~2 min even right after a LocalDB restart → most of the time is creating one database per test class; T54 should try one shared database per run.
 
 ## S11 · CI   (Should) · ~0.5 h
 

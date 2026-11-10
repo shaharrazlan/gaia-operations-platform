@@ -10,7 +10,9 @@ export function e2eManagementKey() {
 /** Picks an operation in the Calculator, fills both fields (by the labels the operation defines), and calculates. */
 export async function calculate(page, operationId, fieldA, fieldB) {
   await page.getByRole('combobox', { name: 'Operation' }).selectOption(operationId)
-  const fields = page.locator('form.calculator input')
+  // Field A and Field B are the Calculator's two text boxes; their labels change with the operation.
+  const fields = page.getByRole('textbox')
+  await expect(fields).toHaveCount(2)
   await fields.nth(0).fill(fieldA)
   await fields.nth(1).fill(fieldB)
   await page.getByRole('button', { name: 'Calculate' }).click()
