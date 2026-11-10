@@ -91,7 +91,7 @@ internal static class TypeChecker
     private static bool Fits(FormulaType actual, FormulaType expected) =>
         actual == expected || actual == FormulaType.Any || expected == FormulaType.Any;
 
-    private static string Describe(FormulaType type) => type switch
+    internal static string Describe(FormulaType type) => type switch
     {
         FormulaType.Number => "a number",
         FormulaType.Text => "a text",
@@ -101,14 +101,16 @@ internal static class TypeChecker
 
     /// <summary>
     /// The error, plus — when A or B itself is at fault — which input type made them a number or a text,
-    /// and what to choose instead. This is the part an operator can act on.
+    /// and what to choose instead. This is the part an operator can act on. When the needed type is known,
+    /// A or B is at fault only if it isn't that type (in <c>A * "x"</c> with numbers, "x" is).
     /// </summary>
-    private static Exception Fail(string message, InputType inputType, FormulaType? needed, params Node[] atFault)
+    private static Exception Fail(string message, InputType inputType, FormulaType? needed, params Node[] suspects)
     {
-        if (!atFault.Any(node => node is VariableNode))
+        var inputs = TypeOfInputs(inputType);
+        if (!suspects.Any(node => node is VariableNode) || inputs == needed)
             return FormulaErrors.Invalid(message);
 
-        var inputsAreText = TypeOfInputs(inputType) == FormulaType.Text;
+        var inputsAreText = inputs == FormulaType.Text;
         var hint = $" A and B are {(inputsAreText ? "text" : "numbers")} because the input type is {inputType}.";
         hint += (needed, inputsAreText) switch
         {

@@ -38,7 +38,10 @@ internal static class ConstantCheck
 
             // A fixed condition decides the branch now; only that branch can ever run.
             case CallNode { Name: "if" } choice when IsFixed(choice.Arguments[0]):
-                Check(Run(choice.Arguments[0]) is BoolValue { Bool: true } ? choice.Arguments[1] : choice.Arguments[2]);
+                var condition = Run(choice.Arguments[0]);
+                if (condition is not BoolValue chosen)   // possible when its type is Any
+                    throw NeverProducesResult(choice, Evaluator.NotACondition(condition));
+                Check(chosen.Bool ? choice.Arguments[1] : choice.Arguments[2]);
                 break;
 
             case CallNode call:

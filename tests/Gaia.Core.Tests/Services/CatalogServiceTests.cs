@@ -292,6 +292,19 @@ public class CatalogServiceTests
     }
 
     [Fact]
+    public async Task R4_AC8_an_operation_saved_before_the_check_can_still_be_disabled_or_renamed()
+    {
+        var legacy = Op("legacy", "A ^ B");
+        legacy.InputType = InputType.Text;   // can never run, but was saved before R4.AC8 existed
+        var repository = new FakeRepository(legacy);
+
+        var saved = await Service(repository).UpdateAsync("legacy", Same(legacy) with { Name = "Old one", IsEnabled = false });
+
+        Assert.Equal("Old one", saved.Name);
+        Assert.False(saved.IsEnabled);
+    }
+
+    [Fact]
     public async Task R4_AC4_an_update_with_a_bad_formula_is_rejected_and_nothing_changes()
     {
         var original = Op("avg", "(A + B) / 2");

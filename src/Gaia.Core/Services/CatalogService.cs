@@ -90,6 +90,12 @@ public sealed partial class CatalogService(IOperationRepository repository, Time
             RejectLogicChange(NullIfBlank(input.Formula) != current.Formula, "formula");
             formula = current.Formula;
         }
+        else if (NullIfBlank(input.Formula) == current.Formula && details.InputType == current.InputType)
+        {
+            // Logic unchanged (a rename, a label, on/off): not re-checked, so an operation saved before the
+            // save-time checks existed can still be disabled (R4.AC8).
+            formula = current.Formula;
+        }
         else
         {
             formula = CheckFormula(input.Formula, details.InputType);

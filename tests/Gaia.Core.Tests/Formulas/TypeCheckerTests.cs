@@ -52,6 +52,7 @@ public class TypeCheckerTests
     [Theory]
     [InlineData("(A > B) * 2", InputType.Number)]   // no A or B at the failing operator itself
     [InlineData("count(A, 2)", InputType.Text)]     // the wrong argument is the literal 2, not A or B
+    [InlineData("A * \"x\"", InputType.Number)]     // A is a number, as '*' needs; the text "x" is at fault
     public void R4_AC8_the_input_type_hint_appears_only_when_A_or_B_is_at_fault(string formula, InputType inputType)
     {
         var error = Assert.Throws<ValidationException>(() => FormulaEngine.Validate(formula, inputType));

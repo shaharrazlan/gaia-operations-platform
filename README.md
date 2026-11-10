@@ -60,9 +60,9 @@ npm --prefix client run dev
 
 | Level | What it covers | Command | Count |
 |---|---|---|---|
-| Unit (server) | formula engine, services, history rules, weather handler | `dotnet test tests/Gaia.Core.Tests` | 235 |
-| Integration (server, needs LocalDB) | the HTTP API against a real SQL Server database (one test database per test class, dropped afterwards), logs | `dotnet test tests/Gaia.Api.Tests` | 108 |
-| Component (client) | React views with a fake API | `npm --prefix client test -- --run` | 66 |
+| Unit (server) | formula engine, services, history rules, weather handler | `dotnet test tests/Gaia.Core.Tests` | 299 |
+| Integration (server, needs LocalDB) | the HTTP API against a real SQL Server database (one test database per test class, dropped afterwards), logs | `dotnet test tests/Gaia.Api.Tests` | 111 |
+| Component (client) | React views with a fake API | `npm --prefix client test -- --run` | 67 |
 | E2E (Playwright) | the real app in Chromium: calculate, error, add a formula and use it, history | `npm --prefix client run e2e` (first time: `npx --prefix client playwright install chromium`) | 5 |
 | All | every level in order, stops at the first failure | `powershell -ExecutionPolicy Bypass -File scripts/test-all.ps1` | |
 
@@ -159,8 +159,13 @@ Operators define new operations as formulas over `A` and `B`. A formula is parse
 Examples: `(A + B) / 2` · `sqrt(A * A + B * B)` · `upper(A) + " " + B` · `if(A > B, A, B)` · `round(A / B * 100, 1)`.
 
 **Rules:**
-- **Checked when saved.** An unknown name or function, a wrong number of arguments, or a syntax error is rejected at save time with its position, e.g. `Expected ')' at position 7`. A broken formula never reaches the catalog.
-- **Errors while running.** Division or modulo by zero, a result that isn't a finite number, or a type mismatch (e.g. `upper(5)`) is a `domain_error` at run time.
+- **Checked when saved.** A formula that could never run is refused at save time (`formula_invalid`), with its position, so it never reaches the Calculator:
+  - **Syntax:** an unknown name or function, a wrong number of arguments, or a syntax error, e.g. `Expected ')' at position 7`.
+  - **Types:** every part's type is worked out from the input type. `A ^ B` with input type Text is refused with *"'^' at position 3 needs two numbers, but here it gets a text and a text. A and B are text because the input type is Text. Choose input type Number for calculations."* The same goes for `upper(A)` with Number, `A + "kg"`, comparing a number with a text, `(A > B) * 2`, and `if(A, …)` (the condition must be true/false). Changing only the input type of an existing formula is checked too.
+  - **Parts that always fail:** dividing by a fixed 0 (`A / 0`), `sqrt(-1)`, `round(A, 20)`, `count(A, "")`.
+- **Mixing numbers and text.** Use functions, not operators: `concat` turns numbers into text (`concat("Total: ", A * 2)`), and `len` and `count` turn text into numbers (`len(A) + len(B)`).
+- **Allowed on purpose.** Some things are allowed because they can work for some inputs: `if` branches of different types (`if(A > B, A, "none")`), a true/false result (`A > B`), and ignoring A or B. **Kind** is only a category for the list and isn't checked against the formula.
+- **Errors while running.** Errors that depend on the values typed in, such as division by zero when B is 0, `sqrt` of a negative A, or a result that isn't a finite number, are a `domain_error` at run time.
 - **Number formatting.** Numbers are shown in plain decimal notation with at most 15 significant digits, so `0.1 + 0.2` gives `0.3`.
 - **Size limits.** A formula is at most 500 characters and 50 levels deep. Inputs are at most 200 characters, and text results at most 1000.
 
@@ -260,6 +265,8 @@ Where the assignment was open to more than one reading, this is the reading used
 
 - **Number precision.** Numbers are 64-bit floating point, shown with at most 15 significant digits and 15 decimals. A result smaller than 1e-15 shows as `0`, and a huge result (over 200 digits) can't be typed back in as an input.
 - **Names aren't unique.** Two operations may have the same display name; their ids differ.
+- **One input type per operation.** A and B always share one input type, so an operation like "repeat text A, B times" can't be defined. There is also no function that turns a text like `"5"` into the number 5; use input type Number instead.
+- **Formulas saved before the save-time checks.** Operations saved before these checks existed aren't re-checked. They still fail safely in the Calculator, with the same plain message, until they're edited.
 - **History across a month boundary.** The E2E history test assumes it doesn't run exactly across midnight on the 1st of a month (Israel time).
 - **Shared log folder.** The dev server and the E2E server write to the same `src/Gaia.Api/logs` folder.
 - **LocalDB under low memory.** LocalDB can stall when the machine is short of memory (see [Troubleshooting](#troubleshooting)).

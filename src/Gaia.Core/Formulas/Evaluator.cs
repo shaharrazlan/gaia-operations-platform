@@ -57,8 +57,11 @@ public static class Evaluator
         {
             BoolValue { Bool: true } => Evaluate(call.Arguments[1], a, b),
             BoolValue { Bool: false } => Evaluate(call.Arguments[2], a, b),
-            var other => throw new DomainException($"if: the condition must be true/false, not {Describe(other)}."),
+            var other => throw NotACondition(other),
         };
+
+    internal static DomainException NotACondition(Value condition) =>
+        new($"if: the condition must be true/false, not {Describe(condition)}.");
 
     /// <summary>Every computed number goes through here, so NaN and ±∞ never escape as a "result".</summary>
     internal static NumberValue Number(double value) =>
@@ -86,10 +89,11 @@ public static class Evaluator
         _ => comparison >= 0,
     });
 
-    internal static string Describe(Value value) => value switch
+    /// <summary>Worded once, in <see cref="TypeChecker.Describe"/>, so save-time and run-time messages match.</summary>
+    internal static string Describe(Value value) => TypeChecker.Describe(value switch
     {
-        NumberValue => "a number",
-        TextValue => "a text",
-        _ => "a true/false value",
-    };
+        NumberValue => FormulaType.Number,
+        TextValue => FormulaType.Text,
+        _ => FormulaType.Bool,
+    });
 }

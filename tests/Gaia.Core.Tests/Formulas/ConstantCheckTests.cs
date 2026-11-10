@@ -17,6 +17,7 @@ public class ConstantCheckTests
     [InlineData("round(A, 1.5)", InputType.Number, "round: the number of digits must be a whole number")]
     [InlineData("count(A, \"\")", InputType.Text, "count: the text to count must not be empty.")]
     [InlineData("replace(A, \"\", \"x\")", InputType.Text, "replace: the text to find must not be empty.")]
+    [InlineData("if(if(1 > 0, \"x\", 1 > 2), A, B)", InputType.Number, "if: the condition must be true/false, not a text.")]
     public void R4_AC9_a_fixed_part_that_can_never_produce_a_result_is_rejected(string formula, InputType inputType, string expected)
     {
         var error = Assert.Throws<ValidationException>(() => FormulaEngine.Validate(formula, inputType));
