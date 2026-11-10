@@ -15,6 +15,34 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+describe('httpApi — management calls', () => {
+  it('T34: the management list asks for disabled operations too', async () => {
+    const fetch = respond(200, [], 'application/json')
+    vi.stubGlobal('fetch', fetch)
+
+    await httpApi.getOperations({ includeDisabled: true })
+
+    expect(fetch.mock.calls[0][0]).toBe('/api/operations?includeDisabled=true')
+  })
+
+  it('T34: create, update and delete use POST, PUT and DELETE with the definition as JSON', async () => {
+    const json = () => new Response(JSON.stringify({ id: 'avg' }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    const fetch = vi.fn().mockResolvedValueOnce(json()).mockResolvedValueOnce(json()).mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetch)
+
+    await httpApi.createOperation({ id: 'avg', name: 'Average' })
+    await httpApi.updateOperation('avg', { name: 'Mean', version: 'v1' })
+    await expect(httpApi.deleteOperation('avg')).resolves.toBeNull()
+
+    expect(fetch.mock.calls.map(([url, init]) => [init.method ?? 'GET', url])).toEqual([
+      ['POST', '/api/operations'],
+      ['PUT', '/api/operations/avg'],
+      ['DELETE', '/api/operations/avg'],
+    ])
+    expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({ name: 'Mean', version: 'v1' })
+  })
+})
+
 describe('httpApi', () => {
   it('T25: returns the JSON body of a successful response', async () => {
     vi.stubGlobal('fetch', respond(200, [{ id: 'add' }], 'application/json'))

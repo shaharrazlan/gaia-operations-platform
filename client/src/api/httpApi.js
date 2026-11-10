@@ -41,7 +41,17 @@ export function createHttpApi({ timeoutMs = REQUEST_TIMEOUT_MS } = {}) {
   }
 
   return {
-    getOperations: () => request('/api/operations'),
+    /** The calculator's list (enabled only), or with includeDisabled the management list (R12.AC2). */
+    getOperations: ({ includeDisabled = false } = {}) =>
+      request(includeDisabled ? '/api/operations?includeDisabled=true' : '/api/operations'),
+
+    createOperation: (definition) => request('/api/operations', { method: 'POST', body: JSON.stringify(definition) }),
+
+    /** `definition.version` must be the version that was loaded; a stale one is rejected with edit_conflict (R4.AC7). */
+    updateOperation: (id, definition) =>
+      request(`/api/operations/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(definition) }),
+
+    deleteOperation: (id) => request(`/api/operations/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 
     execute: (operationId, fieldA, fieldB) =>
       request(`/api/operations/${encodeURIComponent(operationId)}/execute`, {

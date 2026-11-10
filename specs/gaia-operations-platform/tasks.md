@@ -303,16 +303,17 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: component "R12.AC1: top bar switches Calculator ↔ Manage operations"; component "R12.AC7: returning to Calculator re-fetches operations"
   - Depends on: T27
   - Done when: `COMP` green.
-  - Commit: see git log "T33:" (hash recorded in the T34 commit)
+  - Commit: d11998d
   - Also: `styles.css` (top-bar styling). Only the visible view is mounted, so R12.AC7 needs no extra code.
 
-- [ ] **T34 · Operations table**
+- [x] **T34 · Operations table**
   - Covers: R12.AC2, R12.AC5 · Step S7
   - Files: `ManageView.jsx`, `ManageView.test.jsx`, `client/src/api/httpApi.js` + `fakeApi.js` (management calls)
   - Tests: component "R12.AC2: lists enabled and disabled ops, 'built-in' for system code ops"; component "R12.AC5: disable/enable toggle calls API and updates the row"
   - Depends on: T33
   - Done when: `COMP` green.
-  - Commit: —
+  - Commit: (T34)
+  - Also: Delete button with a confirmation for custom ops (R4.AC3 through the UI — no task had it, the plan's screen lists it); a rejected toggle/delete shows the server message and reloads the list; `src/api/definitions.js` (`toDefinition`, shared with the form); `httpApi.test.js` covers the new calls; table styles.
 
 - [ ] **T35 · Add-operation form**
   - Covers: R12.AC3, R12.AC6 · Step S7
