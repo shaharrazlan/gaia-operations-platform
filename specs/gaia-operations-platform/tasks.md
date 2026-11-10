@@ -518,28 +518,31 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Carry-overs to check here (noted during S1–S5): measure **warm** execute latency vs NFR1 (< 200 ms; the first call after start took 1–3 s, cold start); actually launch `scripts/run.ps1` (not yet run — it opens windows); fresh-clone run per NFR3. From S8–S9: LocalDB degrades over a long session (test databases time out while being created; integration runs went from 10 s to 2–4 min) — a `sqllocaldb stop`/`start` fixes it; consider fewer test databases (one per run instead of one per test class) and a README troubleshooting note.
 ## Verify fixes (from verify.md, 2026-11-10)
 
-- [ ] **T57 · Client install works on a fresh clone (G1)**
+- [x] **T57 · Client install works on a fresh clone (G1)**
   - Covers: NFR3 · Step S10
   - Files: `scripts/run.ps1`, `README.md` (Run section)
   - Tests: manual: in a fresh clone with no `client/node_modules`, `scripts/run.ps1` installs the packages and starts both servers; the README's manual steps work as written.
   - Depends on: —
   - Done when: `npm --prefix client install` is replaced by a form that works on npm 11 (e.g. `npm ci --prefix client`, which installs exactly the lock file) in both places; fresh-clone run passes.
+  - Note: verified on a fresh clone with no `client/node_modules`: `run.ps1` ran `npm ci`, built and started both servers (API and UI answering 200) in 48 s.
   - Commit: —
 
-- [ ] **T58 · test-all.ps1 installs client packages (G2)**
+- [x] **T58 · test-all.ps1 installs client packages (G2)**
   - Covers: NFR3, R13.AC6 · Step S10
   - Files: `scripts/test-all.ps1`, `README.md` (Tests section)
   - Tests: manual: `test-all.ps1` in a fresh clone gets past "Client build" with no other step first.
   - Depends on: T57
   - Done when: the script runs `npm ci --prefix client` when `client/node_modules` is missing; the README says a first run installs the client packages and Playwright's Chromium (`npx --prefix client playwright install chromium`), and that the R13.AC6 build scan runs only after a client build.
+  - Note: verified: `test-all.ps1` on a fresh clone installs the packages in its new "Client packages" step and passes every level. `npx --prefix client playwright …` works on npm 11 (checked `--version`).
   - Commit: —
 
-- [ ] **T59 · LocalDB stall after the integration run (G3)**
+- [x] **T59 · LocalDB stall after the integration run (G3)**
   - Covers: NFR3 · Step S10
   - Files: `scripts/test-all.ps1`, `README.md` (Troubleshooting)
   - Tests: manual: `test-all.ps1` twice in a row passes on this machine.
   - Depends on: T58
   - Done when: before E2E the script frees memory held by idle build servers (`dotnet build-server shutdown`); the README has a Troubleshooting entry (symptoms: 503 `database_unavailable`, Playwright "Timed out waiting … webServer"; fix: `sqllocaldb stop MSSQLLocalDB` then `sqllocaldb start MSSQLLocalDB`; cause: low free memory). If it still fails twice in a row, record it as a known limitation instead.
+  - Note: besides `dotnet build-server shutdown`, the new "Prepare E2E" step also restarts the LocalDB instance (skipped when `sqllocaldb` is not installed): that restart is what fixed the stall every time. Low review: a failing `sqllocaldb start` now fails this step instead of surfacing as an E2E timeout. Verified: `test-all.ps1` twice in a row on a fresh clone, both green (unit 235, integration 108, component 66, E2E 5; 6 m 18 s and 1 m 54 s).
   - Commit: —
 
 - [x] **T60 · Integration test: a disabled operation can't be executed (G4)**
