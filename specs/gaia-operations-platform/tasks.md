@@ -566,3 +566,9 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 ## Submit (always last)
 
 - [ ] **T56 · Polish & submit**: README (setup, run, test commands, formula language reference, interpretations A5/A8/A9, Security section, known limitations, trade-offs), no secrets beyond the documented dev key, clean history, Submission notes in plan.md, create the **private** GitHub repo and push (needs your OK), invite the reviewer.
+  - Part 1 done (README + Submission notes):
+    - **README.** All sections are written: try-it tour, API with curl examples, formula language, how it works, configuration, logs, interpretations, security, known limitations, with more time, troubleshooting. Every curl example and formula example was run against the dev API.
+    - **Fixed claim.** `dotnet ef database update` needs `--connection` (the design-time factory always points at `GaiaDev`); checked on a throwaway database.
+    - **plan.md.** Submission notes written; the client fake's path corrected (`src/test/fakeApi.js`).
+    - **Hygiene.** No personal paths in tracked files; the only keys are the documented dev/E2E/test ones; `assignment.md` never committed.
+  - Part 2 (repo, push, invite): waiting for the user's OK.

@@ -112,7 +112,7 @@ RunDto              { fieldA, fieldB, result, createdAtUtc }
 `Gaia.Api`: `OperationsController`, `ProblemDetailsMapper`, `RequestResponseLoggingMiddleware`, `CorrelationIdMiddleware`.
 
 ### Shared names (client)
-`src/api/errors.js` (`ApiError`, `ServiceUnavailableError`) · `src/api/httpApi.js` · `src/api/fakeApi.js` (both export the same functions: `getOperations`, `execute`, `createOperation`, `updateOperation`, `deleteOperation`) · `src/api/ApiContext.jsx` (lets tests inject `fakeApi`) · `src/views/CalculatorView.jsx` · `src/views/ManageView.jsx` · `src/components/HistoryPanel.jsx` · `src/components/OperationForm.jsx` · `src/App.jsx` (view switch).
+`src/api/errors.js` (`ApiError`, `ServiceUnavailableError`) · `src/api/httpApi.js` · `src/test/fakeApi.js` (test-only; both export the same functions: `getOperations`, `execute`, `createOperation`, `updateOperation`, `deleteOperation`) · `src/api/definitions.js` (kinds and input types for the form) · `src/api/ApiContext.jsx` (lets tests inject `fakeApi`) · `src/views/CalculatorView.jsx` · `src/views/ManageView.jsx` · `src/components/HistoryPanel.jsx` · `src/components/OperationForm.jsx` · `src/App.jsx` (view switch).
 
 ### Screens
 - **Calculator** (default): `Field A [label]` · operation `<select>` · `Field B [label]` · **Calculate** · result box · error box · history panel (S8).
@@ -339,4 +339,28 @@ Integration tests create a uniquely named LocalDB database per test class (`Gaia
 | Explaining every line (C8) | — | Small files, no generated boilerplate left in; README "How it works" section. |
 
 ## Submission notes
-<Filled in at the end.>
+*Written 2026-11-10, after verification (verify.md).*
+
+**What was delivered:**
+- All of R1–R13: Part A, the "without development" management (API + screen + management key), and every Part B bonus (history, last 3 runs, monthly count, error log, request/response log).
+- Every acceptance criterion is traced to passing tests: unit 235, integration 108, component 66, E2E 5.
+- From a fresh clone, `scripts/run.ps1` reaches a running app in under a minute (NFR3). A warm execute takes ~18 ms (NFR1).
+
+**Main trade-offs:**
+- **Formulas instead of plugins or HTTP templates (A2).** Operators can add any arithmetic/text rule safely. A new kind of integration (like weather) still needs code. Safety (NFR6) mattered more than unlimited flexibility.
+- **One shared management key instead of user accounts (A6, R13).** It protects the destructive calls without building login. Production would need per-user identity, auditing and rate limiting.
+- **Optimistic concurrency (R4.AC7).** A stale save is refused instead of silently overwritten. Simpler than locks, and nothing can get stuck locked.
+- **Soft delete.** History stays readable, and ids are never reused.
+- **Real SQL Server in the integration tests (one LocalDB database per test class).** It behaves like production (rowversion, collation, FK rules), but it's slower, and on low-memory machines LocalDB can stall (handled in `test-all.ps1`; README Troubleshooting).
+- **Floating-point numbers, shown with 15 significant digits.** Readable results and plain-decimal output that can be typed back in. Not exact decimal arithmetic.
+
+**Known limitations:** listed in the README ("Known limitations"): number precision edges, non-unique display names, the E2E history test across a month boundary, a shared log folder for dev and E2E, LocalDB under memory pressure, and CI covering unit and component tests only.
+
+**With more time:**
+- operator accounts and an audit log;
+- a formula preview before saving;
+- exact decimal arithmetic;
+- a full history screen;
+- one shared test database per run;
+- integration tests in CI against a SQL Server container;
+- Docker Compose.
