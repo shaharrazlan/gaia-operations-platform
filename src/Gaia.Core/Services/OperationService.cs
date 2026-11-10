@@ -6,7 +6,8 @@ using Gaia.Core.Operations;
 
 namespace Gaia.Core.Services;
 
-public sealed record ExecutionResult(string OperationId, string? FieldA, string? FieldB, string Result);
+/// <summary>The result of a run, with its history (null if the history store failed — R7.AC3).</summary>
+public sealed record ExecutionResult(string OperationId, string? FieldA, string? FieldB, string Result, RunHistory? History);
 
 /// <summary>
 /// The business logic for end users and external apps: list the catalog, run an operation.
@@ -36,12 +37,12 @@ public sealed class OperationService(IOperationRepository repository, IEnumerabl
         catch (Exception error) when (error is not OperationCanceledException)
         {
             // A failed run is history too (R7.AC1); the caller still gets the original error.
-            await recorder.RecordAsync(operation.Id, fieldA, fieldB, null, error, Stopwatch.GetElapsedTime(started), cancellationToken);
+            await recorder.RecordFailureAsync(operation.Id, fieldA, fieldB, error, Stopwatch.GetElapsedTime(started), cancellationToken);
             throw;
         }
 
-        await recorder.RecordAsync(operation.Id, fieldA, fieldB, result, null, Stopwatch.GetElapsedTime(started), cancellationToken);
-        return new ExecutionResult(operation.Id, fieldA, fieldB, result);
+        var history = await recorder.RecordSuccessAsync(operation.Id, fieldA, fieldB, result, Stopwatch.GetElapsedTime(started), cancellationToken);
+        return new ExecutionResult(operation.Id, fieldA, fieldB, result, history);
     }
 
     private Task<string> RunHandlerAsync(OperationDefinition operation, string? fieldA, string? fieldB,

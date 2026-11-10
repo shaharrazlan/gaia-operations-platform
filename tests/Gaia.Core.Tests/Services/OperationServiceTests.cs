@@ -56,7 +56,7 @@ public class OperationServiceTests
     private static OperationService Service(IOperationRepository repository, params IOperationHandler[] handlers) =>
         Service(repository, new FakeRunRepository(), new ListLogger<RunRecorder>(), handlers);
 
-    private static OperationService Service(IOperationRepository repository, FakeRunRepository runs, ListLogger<RunRecorder> log,
+    private static OperationService Service(IOperationRepository repository, IRunRepository runs, ListLogger<RunRecorder> log,
         params IOperationHandler[] handlers) =>
         new(repository, handlers, new RunRecorder(runs, new FixedTime(Now), log));
 
@@ -129,6 +129,45 @@ public class OperationServiceTests
     }
 
     [Fact]
+    public async Task R8_AC1_a_successful_run_comes_back_with_its_history()
+    {
+        var runs = new FakeRunRepository();
+        var service = Service(new FakeRepository(Op("add", "A + B")), runs, new ListLogger<RunRecorder>());
+        await service.ExecuteAsync("add", "1", "1");
+
+        var result = await service.ExecuteAsync("add", "2", "2");
+
+        Assert.NotNull(result.History);
+        Assert.Equal(["1"], result.History.PreviousRuns.Select(r => r.FieldA));
+        Assert.Equal(2, result.History.MonthCount);
+    }
+
+    [Fact]
+    public async Task R7_AC3_when_reading_history_fails_the_result_still_comes_back_with_no_history_and_it_is_logged()
+    {
+        var runs = new BrokenReadsRunRepository();
+        var log = new ListLogger<RunRecorder>();
+        var service = Service(new FakeRepository(Op("divide", "A / B")), runs, log);
+
+        var result = await service.ExecuteAsync("divide", "7", "2");
+
+        Assert.Equal("3.5", result.Result);
+        Assert.Null(result.History);
+        Assert.Equal(LogLevel.Error, Assert.Single(log.Entries).Level);
+    }
+
+    private sealed class BrokenReadsRunRepository : IRunRepository
+    {
+        public Task AddAsync(OperationRun run, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task<IReadOnlyList<OperationRun>> LatestSuccessfulAsync(string operationId, long exceptRunId, int count,
+            CancellationToken cancellationToken = default) => throw new InvalidOperationException("read failed");
+
+        public Task<int> CountSuccessfulSinceAsync(string operationId, DateTime sinceUtc, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("read failed");
+    }
+
+    [Fact]
     public async Task R7_AC3_when_the_history_store_fails_on_a_failed_run_the_callers_error_is_unchanged()
     {
         var service = Service(new FakeRepository(Op("divide", "A / B")), new FakeRunRepository { Broken = true }, new ListLogger<RunRecorder>());
@@ -145,7 +184,7 @@ public class OperationServiceTests
 
         var result = await service.ExecuteAsync("divide", "7", "2");
 
-        Assert.Equal(new ExecutionResult("divide", "7", "2", "3.5"), result);
+        Assert.Equal(("divide", "7", "2", "3.5"), (result.OperationId, result.FieldA, result.FieldB, result.Result));
     }
 
     [Fact]

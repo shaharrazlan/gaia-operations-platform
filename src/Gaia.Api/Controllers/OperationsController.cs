@@ -88,9 +88,6 @@ public class OperationsController(OperationService operations, CatalogService ca
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity, "application/problem+json")]
-    public async Task<ExecuteResponse> Execute(string id, ExecuteRequest request, CancellationToken cancellationToken)
-    {
-        var result = await operations.ExecuteAsync(id, request.FieldA, request.FieldB, cancellationToken);
-        return new ExecuteResponse(result.OperationId, result.FieldA, result.FieldB, result.Result);
-    }
+    public async Task<ExecuteResponse> Execute(string id, ExecuteRequest request, CancellationToken cancellationToken) =>
+        ExecuteResponse.From(await operations.ExecuteAsync(id, request.FieldA, request.FieldB, cancellationToken));
 }

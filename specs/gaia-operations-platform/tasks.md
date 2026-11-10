@@ -403,17 +403,18 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: integration "R7.AC1: success and failure runs stored with all fields"; integration "R7.AC2: a new host on the same DB reads earlier runs"; unit "R7.AC3: run repository failure → result still returned, history null, error logged"
   - Depends on: T41
   - Done when: `UNIT` and `INT` green.
-  - Commit: (T43)
+  - Commit: e6737d9
   - Notes: `RunRecorder` stores a run for every execution of an existing operation (success with result; failure with code + message; unexpected errors as `internal_error` with no internals). Inputs, result and message are shortened to their column sizes. A store failure is logged at Error and never changes what the caller gets (R7.AC3). Unknown ids record nothing (no operation to point at). No `IRunRecorder` swap was needed (no stub existed); Core now references `Microsoft.Extensions.Logging.Abstractions` 10.0.14. The red step here was a compile error (tests and the new constructor landed together). R7.AC2 (new host reads earlier runs) is tested in T44, where history is returned.
   - Test infra: `GaiaApiFactory` retries a timed-out database creation once and always drops a half-made database (LocalDB is sometimes very slow to create one; two runs had failed that way and left 3 test databases, removed by hand).
 
-- [ ] **T44 · History in the execute response**
+- [x] **T44 · History in the execute response**
   - Covers: R8.AC1–5, R9.AC1–3 · Step S8
   - Files: `src/Gaia.Core/History/HistoryService.cs`, `ExecuteResponse.cs`, `OperationsController.cs`
   - Tests: integration "R8.AC1: 4 prior runs → 3 newest prior, current excluded"; integration "R8.AC2: 0 and 2 prior runs"; integration "R8.AC3: other operations excluded"; integration "R8.AC4: history in API response"; integration "R8.AC5: failed runs excluded"; integration "R9.AC1: N this month + M last month → N"; integration "R9.AC2: other ops and failed runs not counted"; integration "R9.AC3: monthCount in API response"
   - Depends on: T42, T43
   - Done when: `INT` green.
-  - Commit: —
+  - Commit: (T44)
+  - Note: no separate `HistoryService` — reading history lives in `RunRecorder.RecordSuccessAsync` next to storing, so the one rule "history failure: log it, still return the result" is in one place. Integration tests run on a fixed clock (15 Nov 2026) via `FixedClockFactory`; the month boundary is tested with a run at 31 Oct 23:59 vs 1 Nov 00:00 Israel time. R7.AC2 (a new server on the same database sees earlier runs) is tested here. Unit test: a failing history read returns the result with `history: null` and logs an error. The red step was implicit: the response had no `history` field before.
 
 - [ ] **T45 · History panel**
   - Covers: R8.AC1, R8.AC2, R9.AC1 (UI) · Step S8
