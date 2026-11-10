@@ -94,6 +94,20 @@ public class HistoryTests(FixedClockFactory factory) : IClassFixture<FixedClockF
     }
 
     [Fact]
+    public async Task R4_AC3_deleting_an_operation_keeps_its_runs()
+    {
+        var id = await NewOperationAsync();
+        Assert.Equal(HttpStatusCode.OK, (await ExecuteAsync(id, "8", "2")).StatusCode);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, (await ExecuteAsync(id, "1", "0")).StatusCode);
+
+        var delete = await factory.CreateManagementClient().DeleteAsync($"/api/operations/{id}");
+
+        Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
+        await using var db = factory.CreateDbContext();
+        Assert.Equal(2, await db.Runs.CountAsync(r => r.OperationId == id));
+    }
+
+    [Fact]
     public async Task R7_AC2_runs_survive_a_restart_a_new_server_on_the_same_database_sees_them()
     {
         var id = await NewOperationAsync();
