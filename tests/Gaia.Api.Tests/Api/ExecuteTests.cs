@@ -113,6 +113,7 @@ public class DatabaseDownTests
             builder.UseEnvironment("Testing");
             builder.UseSetting("ConnectionStrings:Gaia",
                 "Server=(localdb)\\NoSuchGaiaInstance;Database=Nothing;Trusted_Connection=True;Connect Timeout=3");
+            builder.UseSetting("LogFiles:Directory", "");   // no log files from tests
         });
 
         var response = await factory.CreateClient().GetAsync("/api/operations");

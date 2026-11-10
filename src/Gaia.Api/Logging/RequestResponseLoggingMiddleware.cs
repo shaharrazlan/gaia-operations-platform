@@ -46,9 +46,9 @@ public sealed partial class RequestResponseLoggingMiddleware(RequestDelegate nex
             buffer.Position = 0;
             var responseBody = await ReadForLogAsync(buffer);
 
-            LogRequest(context.Request.Method, context.Request.Path, context.Request.QueryString.Value ?? "",
+            LogRequest(context.Request.Method, Safe(context.Request.Path), Safe(context.Request.QueryString.Value ?? ""),
                 context.Response.StatusCode, Stopwatch.GetElapsedTime(started).TotalMilliseconds,
-                HeadersForLog(context.Request.Headers), requestBody, responseBody);
+                Safe(HeadersForLog(context.Request.Headers)), Safe(requestBody), Safe(responseBody));
 
             buffer.Position = 0;
             await buffer.CopyToAsync(original, context.RequestAborted);
@@ -59,6 +59,27 @@ public sealed partial class RequestResponseLoggingMiddleware(RequestDelegate nex
         Message = "{Method} {Path}{Query} -> {StatusCode} in {DurationMs:0.0} ms | request headers: {RequestHeaders} | request body: {RequestBody} | response body: {ResponseBody}")]
     private partial void LogRequest(string method, string path, string query, int statusCode, double durationMs,
         string requestHeaders, string requestBody, string responseBody);
+
+    /// <summary>
+    /// Text from the caller is written escaped: a line break becomes "\n", so a request can't forge
+    /// extra lines in the log file (log injection). Other control characters become \uXXXX.
+    /// </summary>
+    public static string Safe(string text)
+    {
+        if (!text.Any(char.IsControl))
+            return text;
+        var escaped = new StringBuilder(text.Length + 16);
+        foreach (var c in text)
+            escaped.Append(c switch
+            {
+                '\r' => @"\r",
+                '\n' => @"\n",
+                '\t' => @"\t",
+                _ when char.IsControl(c) => $@"\u{(int)c:x4}",
+                _ => c.ToString(),
+            });
+        return escaped.ToString();
+    }
 
     private static string HeadersForLog(IHeaderDictionary headers) =>
         string.Join("; ", headers.Select(h => $"{h.Key}: {(SecretHeaders.Contains(h.Key) ? "***" : h.Value.ToString())}"));

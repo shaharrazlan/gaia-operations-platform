@@ -453,8 +453,10 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: integration "R11.AC1: one entry per request with method, path, bodies, status, duration"; integration "R11.AC2: same correlation id in request log and error log"; integration "R13.AC7: X-Management-Key logged as *** and the key text is in no sink"
   - Depends on: T47
   - Done when: `INT` green.
-  - Commit: (T48)
+  - Commit: bee79b5
   - Also: only `/api/...` requests are logged (not Swagger or /health); request headers are logged with `X-Management-Key`, `Authorization` and `Cookie` as `***`; bodies cut at 16 KB with "…(truncated)"; error responses (4xx/5xx) are logged too. Extra tests: error response logged, /health not logged, 16 KB cut.
+  - S9 review (high, with a security pass): **log injection fixed** — line breaks and other control characters from the caller (path, query, headers, bodies) are written escaped (`\n`), so a request can't forge log lines (test added); log files now kept for 14 days explicitly (`RetainedDays`); the logs folder is resolved from the app folder (`src/Gaia.Api/logs`) whatever folder the server starts from; the database-down test no longer writes log files. Kept by design, **for the README**: the request log holds what users type (R11 asks for bodies); a database failure gives two error lines (EF Core's and ours, same correlation id).
+  - Real-app check: `src/Gaia.Api/logs/requests-YYYYMMDD.log` has one line per API call with method, path, status, duration, headers (`X-Management-Key: ***`), both bodies; the 422's correlation id matches the one in its error body; the dev key text appears 0 times in the logs; division by zero wrote nothing to the error log (business error). Cold first call ~400 ms, warm calls 55–110 ms.
 
 ## S10 · E2E + README + submission   (Must) · ~1.5 h
 
@@ -504,5 +506,5 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 - [ ] **T54 · Deep review**: `/code-review high`, `/simplify`, `/security-review` (formula input, management key). Fix the confirmed findings.
 - [ ] **T55 · Verify against the spec**: run `sdd-verify`.
-  - Carry-overs to check here (noted during S1–S5): measure **warm** execute latency vs NFR1 (< 200 ms; the first call after start took 1–3 s, cold start); actually launch `scripts/run.ps1` (not yet run — it opens windows); fresh-clone run per NFR3.
+  - Carry-overs to check here (noted during S1–S5): measure **warm** execute latency vs NFR1 (< 200 ms; the first call after start took 1–3 s, cold start); actually launch `scripts/run.ps1` (not yet run — it opens windows); fresh-clone run per NFR3. From S8–S9: LocalDB degrades over a long session (test databases time out while being created; integration runs went from 10 s to 2–4 min) — a `sqllocaldb stop`/`start` fixes it; consider fewer test databases (one per run instead of one per test class) and a README troubleshooting note.
 - [ ] **T56 · Polish & submit**: README (setup, run, test commands, formula language reference, interpretations A5/A8/A9, Security section, known limitations, trade-offs), no secrets beyond the documented dev key, clean history, Submission notes in plan.md, create the **private** GitHub repo and push (needs your OK), invite the reviewer.

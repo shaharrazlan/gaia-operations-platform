@@ -23,7 +23,8 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 // Logging: Serilog, writing the error log and the request/response log (see LogSetup).
-builder.Services.AddSerilog((services, logger) => LogSetup.Configure(logger, builder.Configuration, services));
+builder.Services.AddSerilog((services, logger) =>
+    LogSetup.Configure(logger, builder.Configuration, services, builder.Environment.ContentRootPath));
 
 // --- Services ---
 builder.Services.AddDbContext<GaiaDbContext>((services, options) =>

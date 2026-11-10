@@ -15,6 +15,9 @@ namespace Gaia.Api.Logging;
 /// </summary>
 public static class LogSetup
 {
+    /// <summary>How many days of log files are kept.</summary>
+    public const int RetainedDays = 14;
+
     private const string Template =
         "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] ({CorrelationId}) {Message:lj}{NewLine}{Exception}";
 
@@ -24,7 +27,7 @@ public static class LogSetup
     /// <summary>The request log: the lines written by <see cref="RequestResponseLoggingMiddleware"/>.</summary>
     public static bool IsRequestLog(LogEvent e) => Matching.FromSource<RequestResponseLoggingMiddleware>()(e);
 
-    public static void Configure(LoggerConfiguration logger, IConfiguration configuration, IServiceProvider services)
+    public static void Configure(LoggerConfiguration logger, IConfiguration configuration, IServiceProvider services, string contentRoot)
     {
         logger
             .ReadFrom.Configuration(configuration)   // minimum levels from appsettings "Serilog" section
@@ -32,17 +35,22 @@ public static class LogSetup
             .Enrich.FromLogContext()
             .WriteTo.Console(outputTemplate: Template);
 
-        // "LogFiles:Directory" (default "logs" next to the app); empty turns the files off (the tests do that).
-        var directory = configuration["LogFiles:Directory"];
-        if (string.IsNullOrWhiteSpace(directory))
+        // "LogFiles:Directory": "logs" = src/Gaia.Api/logs, whichever folder the server is started from.
+        // Empty turns the files off (the tests do that).
+        var setting = configuration["LogFiles:Directory"];
+        if (string.IsNullOrWhiteSpace(setting))
             return;
+        var directory = Path.Combine(contentRoot, setting);
 
+        // One file per day; files older than RetainedDays are deleted (the request log holds what users typed).
         logger
             .WriteTo.Logger(errors => errors
                 .Filter.ByIncludingOnly(IsErrorLog)
-                .WriteTo.File(Path.Combine(directory, "errors-.log"), outputTemplate: Template, rollingInterval: RollingInterval.Day))
+                .WriteTo.File(Path.Combine(directory, "errors-.log"), outputTemplate: Template,
+                    rollingInterval: RollingInterval.Day, retainedFileCountLimit: RetainedDays))
             .WriteTo.Logger(requests => requests
                 .Filter.ByIncludingOnly(IsRequestLog)
-                .WriteTo.File(Path.Combine(directory, "requests-.log"), outputTemplate: Template, rollingInterval: RollingInterval.Day));
+                .WriteTo.File(Path.Combine(directory, "requests-.log"), outputTemplate: Template,
+                    rollingInterval: RollingInterval.Day, retainedFileCountLimit: RetainedDays));
     }
 }

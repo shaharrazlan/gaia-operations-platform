@@ -205,6 +205,19 @@ public class RequestLogTests(LoggingFactory factory) : IClassFixture<LoggingFact
     }
 
     [Fact]
+    public async Task S9_line_breaks_in_a_request_cannot_forge_extra_lines_in_the_log()
+    {
+        var content = new StringContent("x\r\n2026-11-10 10:00:00 [ERR] (fake) forged line", System.Text.Encoding.UTF8, "text/plain");
+
+        var response = await factory.CreateClient().PostAsync("/api/operations/add/execute", content);
+
+        var entry = Assert.Single(Logs.For(factory.Sink, Logs.CorrelationIdOf(response), Gaia.Api.Logging.LogSetup.IsRequestLog));
+        Assert.DoesNotContain('\n', entry.RenderMessage());
+        Assert.DoesNotContain('\r', entry.RenderMessage());
+        Assert.Contains(@"x\r\n2026", Text(entry, "RequestBody"));   // shown escaped, still readable
+    }
+
+    [Fact]
     public async Task R13_AC7_the_management_key_is_logged_as_stars_and_its_text_is_in_no_log_line()
     {
         var response = await factory.CreateManagementClient().GetAsync("/api/operations?includeDisabled=true");
