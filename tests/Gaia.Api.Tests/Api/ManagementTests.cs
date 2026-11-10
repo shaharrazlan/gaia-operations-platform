@@ -7,7 +7,8 @@ namespace Gaia.Api.Tests.Api;
 /// <summary>Add, change and remove operations through the API without restarting the server (R4).</summary>
 public class ManagementTests(GaiaApiFactory factory) : IClassFixture<GaiaApiFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    // The R4 behaviour is tested as an operator would call it: with the management key (R13.AC2).
+    private readonly HttpClient _client = factory.CreateManagementClient();
 
     /// <summary>A unique id per test, so tests sharing this class's database never clash.</summary>
     private static string NewId(string prefix) => $"{prefix}-{Guid.NewGuid():N}"[..30];

@@ -13,6 +13,9 @@ namespace Gaia.Api.Tests;
 /// </summary>
 public class GaiaApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    /// <summary>The management key the test server is configured with (R13). Test-only value.</summary>
+    public const string ManagementKey = "test-management-key";
+
     public string DatabaseName { get; } = $"GaiaTests_{Guid.NewGuid():N}";
 
     public string ConnectionString =>
@@ -29,6 +32,15 @@ public class GaiaApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:Gaia", ConnectionString);
+        builder.UseSetting("Management:Key", ManagementKey);
+    }
+
+    /// <summary>A client that sends the management key, for add / change / delete and the full list.</summary>
+    public HttpClient CreateManagementClient()
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Add("X-Management-Key", ManagementKey);
+        return client;
     }
 
     public async Task InitializeAsync()

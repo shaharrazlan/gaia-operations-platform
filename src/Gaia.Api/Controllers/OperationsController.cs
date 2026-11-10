@@ -1,4 +1,5 @@
 using Gaia.Api.Contracts;
+using Gaia.Api.Security;
 using Gaia.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,6 +18,7 @@ public class OperationsController(OperationService operations, CatalogService ca
     /// <response code="400">validation_error / formula_invalid — "field" says which input is wrong.</response>
     /// <response code="409">duplicate_id — the id is taken (also by a deleted operation).</response>
     [HttpPost]
+    [RequireManagementKey]
     [ProducesResponseType<OperationDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
@@ -36,6 +38,7 @@ public class OperationsController(OperationService operations, CatalogService ca
     /// <response code="404">operation_not_found.</response>
     /// <response code="409">edit_conflict — reload the operation and apply your change again.</response>
     [HttpPut("{id}")]
+    [RequireManagementKey]
     [ProducesResponseType<OperationDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
@@ -48,6 +51,7 @@ public class OperationsController(OperationService operations, CatalogService ca
     /// With includeDisabled=true it is the management list: disabled operations are included too.
     /// </summary>
     [HttpGet]
+    [RequireManagementKey(OnlyWhenQueryIsTrue = "includeDisabled")]
     public async Task<IEnumerable<OperationDto>> List(bool includeDisabled, CancellationToken cancellationToken) =>
         (includeDisabled
             ? await catalog.ListAllAsync(cancellationToken)
@@ -63,6 +67,7 @@ public class OperationsController(OperationService operations, CatalogService ca
     /// <response code="404">operation_not_found.</response>
     /// <response code="409">edit_conflict — someone changed it at the same moment; reload and try again.</response>
     [HttpDelete("{id}")]
+    [RequireManagementKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]

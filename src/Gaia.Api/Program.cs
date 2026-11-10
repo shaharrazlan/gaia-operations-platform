@@ -5,6 +5,7 @@
 using System.Text.Json.Serialization;
 using Gaia.Api;
 using Gaia.Api.Errors;
+using Gaia.Api.Security;
 using Gaia.Core.Errors;
 using Gaia.Core.Operations;
 using Gaia.Core.Services;
@@ -13,6 +14,7 @@ using Gaia.Infrastructure.Weather;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +31,7 @@ builder.Services.AddScoped<IOperationRepository, EfOperationRepository>();
 builder.Services.AddScoped<OperationService>();
 builder.Services.AddScoped<CatalogService>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.Configure<ManagementKeyOptions>(builder.Configuration.GetSection(ManagementKeyOptions.Section));
 
 // Code operations (IOperationHandler). Today only weather: real Open-Meteo, or a fixed fake answer.
 var weather = builder.Configuration.GetSection("Weather").Get<WeatherOptions>() ?? new WeatherOptions();
@@ -96,6 +99,11 @@ builder.Services.AddExceptionHandler<ProblemDetailsMapper>();
 var app = builder.Build();
 
 await DatabaseStartup.PrepareAsync(app);
+
+// Closed by default: with no key, add / change / delete always answer 401 (R13.AC8). Say so loudly at startup.
+if (!app.Services.GetRequiredService<IOptions<ManagementKeyOptions>>().Value.IsConfigured)
+    app.Logger.LogWarning("No management key is configured (Management:Key), so adding, changing and removing operations is disabled. " +
+        "Set the environment variable Management__Key to enable it.");
 
 // --- HTTP pipeline ---
 app.UseExceptionHandler();

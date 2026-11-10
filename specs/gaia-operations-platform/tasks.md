@@ -337,13 +337,15 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 ## S12 · Management key   (Should) · ~1 h
 
-- [ ] **T37 · Management key filter**
+- [x] **T37 · Management key filter**
   - Covers: R13.AC1, R13.AC2, R13.AC3, R13.AC8 · Step S12
   - Files: `src/Gaia.Api/Security/RequireManagementKeyAttribute.cs`, `ManagementKeyOptions.cs`, `appsettings.Development.json` (`Management:Key`), `OperationsController.cs` (attributes), `tests/Gaia.Api.Tests/**` (R4 tests send the key)
   - Tests: integration "R13.AC1: POST/PUT/DELETE without key or with wrong key → 401 unauthorized, catalog unchanged"; integration "R13.AC2: with the key, management works as R4"; integration "R13.AC3: GET and execute need no key"; integration "R13.AC8: no key configured → 401 even with a header, startup warning logged"
   - Depends on: T36
   - Done when: `INT` green.
-  - Commit: —
+  - Commit: (T37)
+  - Also: `appsettings.E2E.json` gets its own test key (E2E unlocks the Manage view); `Program.cs` binds the options and logs the startup warning; `GaiaApiFactory` configures a test key and offers `CreateManagementClient()`. The full list uses `[RequireManagementKey(OnlyWhenQueryIsTrue = "includeDisabled")]`. Keys are compared as SHA-256 hashes with `FixedTimeEquals` (no timing or length leak).
+  - Review: `?includeDisabled=true&includeDisabled=true` slipped past the check (the joined "true,true" doesn't parse) while binding still read `true` → now every value is checked; test added.
 
 - [ ] **T38 · Swagger Authorize button**
   - Covers: (keeps R4.AC5 usable) · Step S12
