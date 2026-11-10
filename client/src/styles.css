@@ -278,3 +278,31 @@ select:disabled {
   color: var(--muted);
   font-size: 0.875rem;
 }
+
+/* Management key: the lock screen and the "unlocked" bar (R13.AC4, R13.AC5). */
+.key-gate h2 {
+  margin: 0 0 8px;
+}
+
+.key-row {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+@media (max-width: 640px) {
+  .key-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.key-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+  color: var(--muted);
+}

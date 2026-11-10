@@ -19,7 +19,7 @@ export const sampleManagedOperations = [
  * Every function is a Vitest mock, so a test can change its answer or check how it was called.
  */
 export function createFakeApi(overrides = {}) {
-  return {
+  const api = {
     getOperations: vi.fn().mockResolvedValue(sampleOperations),
     execute: vi.fn(async (operationId, fieldA, fieldB) => ({ operationId, fieldA, fieldB, result: 'fake result' })),
     // Management calls answer like the server: the saved operation with a new version.
@@ -28,4 +28,7 @@ export function createFakeApi(overrides = {}) {
     deleteOperation: vi.fn().mockResolvedValue(null),
     ...overrides,
   }
+  // By default the "keyed" API is the same fake, so tests can inspect one set of mocks.
+  api.withManagementKey ??= vi.fn(() => api)
+  return api
 }

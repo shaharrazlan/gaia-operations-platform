@@ -15,6 +15,19 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+describe('httpApi — management key', () => {
+  it('R13.AC4: withManagementKey sends X-Management-Key on every call; the plain API never does', async () => {
+    const fetch = vi.fn(async () => new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    vi.stubGlobal('fetch', fetch)
+
+    await httpApi.withManagementKey('k-123').getOperations({ includeDisabled: true })
+    await httpApi.getOperations()
+
+    expect(fetch.mock.calls[0][1].headers['X-Management-Key']).toBe('k-123')
+    expect(fetch.mock.calls[1][1].headers['X-Management-Key']).toBeUndefined()
+  })
+})
+
 describe('httpApi — management calls', () => {
   it('T34: the management list asks for disabled operations too', async () => {
     const fetch = respond(200, [], 'application/json')

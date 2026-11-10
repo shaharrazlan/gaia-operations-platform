@@ -6,15 +6,21 @@ export const REQUEST_TIMEOUT_MS = 15_000
 /**
  * Talks to the Gaia API over HTTP. In development Vite forwards /api to the .NET server.
  * The client computes nothing itself: every result and every validation message comes from the server (R6).
+ * The management key is never part of the client build: the operator types it in, and only an API made with
+ * `withManagementKey(key)` sends it (R13.AC6).
  */
-export function createHttpApi({ timeoutMs = REQUEST_TIMEOUT_MS } = {}) {
+export function createHttpApi({ timeoutMs = REQUEST_TIMEOUT_MS, managementKey = null } = {}) {
   async function request(path, { body, ...options } = {}) {
+    // Only requests with a body declare one (keeps GETs "simple", no CORS preflight).
+    const headers = { Accept: 'application/json' }
+    if (body !== undefined) headers['Content-Type'] = 'application/json'
+    if (managementKey) headers['X-Management-Key'] = managementKey
+
     let response
     try {
       response = await fetch(path, {
         ...options,
-        // Only requests with a body declare one (keeps GETs "simple", no CORS preflight).
-        headers: body === undefined ? { Accept: 'application/json' } : { Accept: 'application/json', 'Content-Type': 'application/json' },
+        headers,
         body,
         signal: AbortSignal.timeout(timeoutMs),
       })
@@ -41,6 +47,9 @@ export function createHttpApi({ timeoutMs = REQUEST_TIMEOUT_MS } = {}) {
   }
 
   return {
+    /** The same API, but every call carries the management key (needed to add, change, remove — R13). */
+    withManagementKey: (key) => createHttpApi({ timeoutMs, managementKey: key }),
+
     /** The calculator's list (enabled only), or with includeDisabled the management list (R12.AC2). */
     getOperations: ({ includeDisabled = false } = {}) =>
       request(includeDisabled ? '/api/operations?includeDisabled=true' : '/api/operations'),

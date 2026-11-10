@@ -353,16 +353,18 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: integration "T38: swagger.json declares the X-Management-Key scheme"
   - Depends on: T37
   - Done when: `INT` green.
-  - Commit: (T38)
+  - Commit: 43387fa
   - Also: `Security/ManagementKeyOperationFilter.cs` (Swagger requirement + 401 response only on actions with the attribute). Red confirmed by running the test without the change.
 
-- [ ] **T39 · KeyGate in the UI**
+- [x] **T39 · KeyGate in the UI**
   - Covers: R13.AC4, R13.AC5 · Step S12
   - Files: `client/src/components/KeyGate.jsx`, `KeyGate.test.jsx`, `ManageView.jsx` (wrapped), `httpApi.js` (sends header)
   - Tests: component "R13.AC4: wrong key shows 'Invalid management key' and stays locked"; component "R13.AC4: right key unlocks the view"; component "R13.AC5: key kept in sessionStorage; Lock clears it"
   - Depends on: T38
   - Done when: `COMP` green.
-  - Commit: —
+  - Commit: (T39)
+  - Also: `httpApi.withManagementKey(key)` returns the same API with the header on every call (the plain API never sends it); `fakeApi` gets `withManagementKey`; `App.jsx` wraps the Manage view; `styles.css`. The key is checked by the server (full-list call), never compared in the browser.
+  - Review: a remembered key the server later rejects (401) now locks the gate and asks again, instead of leaving an "unlocked" view whose calls all fail.
 
 - [ ] **T40 · Key-not-shipped check**
   - Covers: R13.AC6 · Step S12

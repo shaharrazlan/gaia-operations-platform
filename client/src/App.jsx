@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import CalculatorView from './views/CalculatorView.jsx'
+import KeyGate from './components/KeyGate.jsx'
 import ManageView from './views/ManageView.jsx'
 import './styles.css'
 
@@ -28,7 +29,16 @@ export default function App() {
           ))}
         </nav>
       </header>
-      <section className="card">{view === 'calculator' ? <CalculatorView /> : <ManageView />}</section>
+      <section className="card">
+        {view === 'calculator' ? (
+          <CalculatorView />
+        ) : (
+          // The Manage view only opens with the management key (R13.AC4).
+          <KeyGate>
+            <ManageView />
+          </KeyGate>
+        )}
+      </section>
     </main>
   )
 }
