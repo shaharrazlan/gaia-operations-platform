@@ -372,7 +372,9 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: component "R13.AC6: the dev key from appsettings.Development.json appears nowhere in client/src or client/dist"
   - Depends on: T39
   - Done when: `COMP` green (after `npm --prefix client run build`).
-  - Commit: (T40)
+  - Commit: 954af4d
+  - S12 review (high, includes the security review done by hand — the bundled `/security-review` needs a GitHub remote, not set up yet): 401 responses now carry `WWW-Authenticate` (HTTP requires it). Kept by design, **to state in the README Security section (T56)**: the committed dev key works only in Development — anywhere else set a long random `Management__Key`; dev runs on http://localhost, so deploy behind HTTPS; wrong keys aren't rate-limited (a long random key makes guessing impractical); the key sits in `sessionStorage` per tab (R13.AC5), and React escapes all output. Masking the key in the request log is R13.AC7, built and tested in S9.
+  - Real-app check (servers started by hand from the new project folder; the browser pane's preview launcher still runs the old session folder): full list without a key → 401; Manage view asks for the key; a wrong key → "Invalid management key." and stays locked; the dev key unlocks; disable + enable Average succeed with the key; Lock clears the stored key and shows the prompt again. Found and fixed: the Unlock button stretched across the row.
   - Also: reads every `Management:Key` from `src/Gaia.Api/appsettings*.json` (dev and E2E) and scans `client/src` and `client/dist`; `KeyGate.test.jsx` now uses a made-up key (it had the real dev value); `scripts/test-all.ps1` builds the client before the component tests so the dist scan always runs there (a plain `npm test` without a build skips that one case and reports it as skipped).
 
 ## S8 · History, last 3, monthly count   (Could) · ~1.75 h

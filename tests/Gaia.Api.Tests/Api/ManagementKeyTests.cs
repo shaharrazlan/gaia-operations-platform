@@ -60,6 +60,7 @@ public class ManagementKeyTests(GaiaApiFactory factory) : IClassFixture<GaiaApiF
         var response = await Send(Client(key), call);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Contains("X-Management-Key", response.Headers.WwwAuthenticate.ToString()); // HTTP: every 401 says how to authenticate
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("unauthorized", problem.GetProperty("code").GetString());
         Assert.Equal(before, await CatalogAsync());

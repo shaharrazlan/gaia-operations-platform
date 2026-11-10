@@ -38,6 +38,8 @@ public sealed class RequireManagementKeyAttribute : Attribute, IAuthorizationFil
         var problem = ProblemDetailsMapper.Problem(StatusCodes.Status401Unauthorized, "Unauthorized",
             $"A valid management key is required in the '{HeaderName}' header to add, change or remove operations.",
             ErrorCodes.Unauthorized);
+        // HTTP requires a 401 to say how to authenticate.
+        context.HttpContext.Response.Headers.WWWAuthenticate = $"ApiKey header=\"{HeaderName}\"";
         context.Result = new ObjectResult(problem) { StatusCode = StatusCodes.Status401Unauthorized, ContentTypes = { "application/problem+json" } };
     }
 
