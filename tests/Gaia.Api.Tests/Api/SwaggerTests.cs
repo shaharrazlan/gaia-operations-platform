@@ -18,6 +18,25 @@ public class SwaggerTests(GaiaApiFactory factory) : IClassFixture<GaiaApiFactory
     }
 
     [Fact]
+    public async Task T38_swagger_json_declares_the_management_key_for_management_calls_only()
+    {
+        using var document = JsonDocument.Parse(await factory.CreateClient().GetStringAsync("/swagger/v1/swagger.json"));
+        var root = document.RootElement;
+
+        var scheme = root.GetProperty("components").GetProperty("securitySchemes").GetProperty("ManagementKey");
+        Assert.Equal("apiKey", scheme.GetProperty("type").GetString());
+        Assert.Equal("header", scheme.GetProperty("in").GetString());
+        Assert.Equal("X-Management-Key", scheme.GetProperty("name").GetString());
+
+        var paths = root.GetProperty("paths");
+        Assert.True(paths.GetProperty("/api/operations").GetProperty("post").TryGetProperty("security", out _));
+        Assert.True(paths.GetProperty("/api/operations/{id}").GetProperty("put").TryGetProperty("security", out _));
+        Assert.True(paths.GetProperty("/api/operations/{id}").GetProperty("delete").TryGetProperty("security", out _));
+        Assert.True(paths.GetProperty("/api/operations/{id}").GetProperty("delete").GetProperty("responses").TryGetProperty("401", out _));
+        Assert.False(paths.GetProperty("/api/operations/{id}/execute").GetProperty("post").TryGetProperty("security", out _));
+    }
+
+    [Fact]
     public async Task T23_swagger_UI_page_is_served()
     {
         var response = await factory.CreateClient().GetAsync("/swagger/index.html");

@@ -80,6 +80,16 @@ builder.Services.AddSwaggerGen(swagger =>
         Description = "Run operations on two inputs (Field A, Field B), and list or manage the operation catalog.",
     });
     swagger.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, "Gaia.Api.xml"));
+
+    // "Authorize" button: enter the management key once, Swagger sends it on add / change / remove (R13).
+    swagger.AddSecurityDefinition(ManagementKeyOperationFilter.SchemeId, new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Name = RequireManagementKeyAttribute.HeaderName,
+        Description = "The management key (server setting Management:Key). Needed to add, change or remove operations.",
+    });
+    swagger.OperationFilter<ManagementKeyOperationFilter>();
 });
 
 // Every error becomes a ProblemDetails response with a "code" (see ProblemDetailsMapper).
