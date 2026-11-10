@@ -508,7 +508,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 ## Review & verify (always last)
 
 - [x] **T54 · Deep review**: `/code-review high`, `/simplify`, `/security-review` (formula input, management key). Fix the confirmed findings.
-  - Commit: (T54)
+  - Commit: 258ebb0
   - Whole-codebase review (high; simplify and security done as angles of it — `/security-review` needs a GitHub remote). **Fixed:** connection strings wait up to 60 s for LocalDB to start (the 15 s default could crash the API at startup — test added); a management key typed in another keyboard layout now says "Invalid management key" instead of "Service unavailable" (test added). **For the README (T56), by design / known limits:** results smaller than 1e-15 show as 0 (15-decimal cap); very large numeric results (> 200 digits) can't be typed back as input; operation names need not be unique; outside Development/E2E the database must be migrated by hand (`dotnet ef database update`); Swagger is served in every environment. Security pass: no vulnerable NuGet/npm packages, no raw HTML/`eval`/raw SQL with input, no secrets beyond the documented dev/E2E/test keys.
   - Test speed: one test class takes ~4 s (database setup ~1.3 s), all 17 classes ~10–14 s; the multi-minute runs were LocalDB being slow, not the per-class databases — no restructure.
   - **For T55:** after a full integration run (≈18 databases created and dropped), LocalDB twice hung the E2E server's start (its database delete/create); `sqllocaldb stop`/`start` fixed it each time. A reviewer running `test-all.ps1` could hit this — decide in T55 (e.g. E2E resets its data instead of dropping the database, and/or a README note).
