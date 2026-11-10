@@ -444,16 +444,17 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: integration "R10.AC1: unhandled exception → error log entry with stack and correlation id; response has no stack"; integration "R10.AC2: 400/404/422 write no error-log entry"
   - Depends on: T46
   - Done when: `INT` green.
-  - Commit: (T47)
+  - Commit: 265fb5d
   - Notes: no separate `ErrorLogging.cs` — `ProblemDetailsMapper` (already the one place every exception passes) logs anything that is not a `GaiaException` at Error with the exception, method and path; .NET 10 no longer logs exceptions that an `IExceptionHandler` handles, so without this nothing reached the log (seen red). Tests cause the unexpected error by swapping in a crashing weather handler (no test-only endpoint in the product). During this task LocalDB degraded (test databases timing out); `sqllocaldb stop`/`start` fixed it — to mention in the README.
 
-- [ ] **T48 · Request/response log**
+- [x] **T48 · Request/response log**
   - Covers: R11.AC1, R11.AC2, R13.AC7 · Step S9
   - Files: `src/Gaia.Api/Logging/RequestResponseLoggingMiddleware.cs`
   - Tests: integration "R11.AC1: one entry per request with method, path, bodies, status, duration"; integration "R11.AC2: same correlation id in request log and error log"; integration "R13.AC7: X-Management-Key logged as *** and the key text is in no sink"
   - Depends on: T47
   - Done when: `INT` green.
-  - Commit: —
+  - Commit: (T48)
+  - Also: only `/api/...` requests are logged (not Swagger or /health); request headers are logged with `X-Management-Key`, `Authorization` and `Cookie` as `***`; bodies cut at 16 KB with "…(truncated)"; error responses (4xx/5xx) are logged too. Extra tests: error response logged, /health not logged, 16 KB cut.
 
 ## S10 · E2E + README + submission   (Must) · ~1.5 h
 

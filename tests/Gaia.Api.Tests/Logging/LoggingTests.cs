@@ -145,3 +145,75 @@ public class ErrorLogTests(LoggingFactory factory) : IClassFixture<LoggingFactor
         Assert.Empty(Logs.For(factory.Sink, Logs.CorrelationIdOf(response), Gaia.Api.Logging.LogSetup.IsErrorLog));
     }
 }
+
+public class RequestLogTests(LoggingFactory factory) : IClassFixture<LoggingFactory>
+{
+    private static string Text(LogEvent e, string property) =>
+        e.Properties.TryGetValue(property, out var value) && value is ScalarValue { Value: var v } ? v?.ToString() ?? "" : "";
+
+    [Fact]
+    public async Task R11_AC1_each_API_request_gets_one_entry_with_method_path_bodies_status_and_duration()
+    {
+        var response = await factory.CreateClient().PostAsJsonAsync("/api/operations/divide/execute", new { fieldA = "7", fieldB = "2" });
+
+        var entry = Assert.Single(Logs.For(factory.Sink, Logs.CorrelationIdOf(response), Gaia.Api.Logging.LogSetup.IsRequestLog));
+        Assert.Equal("POST", Text(entry, "Method"));
+        Assert.Equal("/api/operations/divide/execute", Text(entry, "Path"));
+        Assert.Equal("200", Text(entry, "StatusCode"));
+        Assert.Contains("\"fieldA\":\"7\"", Text(entry, "RequestBody"));
+        Assert.Contains("\"result\":\"3.5\"", Text(entry, "ResponseBody"));
+        Assert.True(double.Parse(Text(entry, "DurationMs"), System.Globalization.CultureInfo.InvariantCulture) >= 0);
+        Assert.Equal("3.5", (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("result").GetString()); // the caller still gets the body
+    }
+
+    [Fact]
+    public async Task R11_AC1_error_responses_are_logged_too()
+    {
+        var response = await factory.CreateClient().PostAsJsonAsync("/api/operations/divide/execute", new { fieldA = "5", fieldB = "0" });
+
+        var entry = Assert.Single(Logs.For(factory.Sink, Logs.CorrelationIdOf(response), Gaia.Api.Logging.LogSetup.IsRequestLog));
+        Assert.Equal("422", Text(entry, "StatusCode"));
+        Assert.Contains("Division by zero.", Text(entry, "ResponseBody"));
+    }
+
+    [Fact]
+    public async Task T48_non_API_requests_like_health_are_not_in_the_request_log()
+    {
+        var response = await factory.CreateClient().GetAsync("/health");
+
+        Assert.Empty(Logs.For(factory.Sink, Logs.CorrelationIdOf(response), Gaia.Api.Logging.LogSetup.IsRequestLog));
+    }
+
+    [Fact]
+    public async Task T48_long_bodies_are_cut_at_16_KB_in_the_log()
+    {
+        var response = await factory.CreateClient().PostAsJsonAsync("/api/operations/concat/execute", new { fieldA = new string('x', 40_000), fieldB = "y" });
+
+        var entry = Assert.Single(Logs.For(factory.Sink, Logs.CorrelationIdOf(response), Gaia.Api.Logging.LogSetup.IsRequestLog));
+        Assert.InRange(Text(entry, "RequestBody").Length, 16 * 1024, 16 * 1024 + 100);
+        Assert.EndsWith("…(truncated)", Text(entry, "RequestBody"));
+    }
+
+    [Fact]
+    public async Task R11_AC2_the_request_log_and_error_log_entries_of_one_request_share_its_correlation_id()
+    {
+        var response = await factory.CreateClient().PostAsJsonAsync("/api/operations/weather/execute", new { fieldA = "32", fieldB = "34" });
+        var id = Logs.CorrelationIdOf(response);
+
+        Assert.Single(Logs.For(factory.Sink, id, Gaia.Api.Logging.LogSetup.IsRequestLog));
+        Assert.Single(Logs.For(factory.Sink, id, Gaia.Api.Logging.LogSetup.IsErrorLog));
+    }
+
+    [Fact]
+    public async Task R13_AC7_the_management_key_is_logged_as_stars_and_its_text_is_in_no_log_line()
+    {
+        var response = await factory.CreateManagementClient().GetAsync("/api/operations?includeDisabled=true");
+
+        var entry = Assert.Single(Logs.For(factory.Sink, Logs.CorrelationIdOf(response), Gaia.Api.Logging.LogSetup.IsRequestLog));
+        Assert.Contains("X-Management-Key: ***", Text(entry, "RequestHeaders"));
+        Assert.DoesNotContain(factory.Sink.Events, e =>
+            e.RenderMessage().Contains(GaiaApiFactory.ManagementKey)
+            || e.Properties.Values.Any(v => v.ToString().Contains(GaiaApiFactory.ManagementKey))
+            || (e.Exception?.ToString().Contains(GaiaApiFactory.ManagementKey) ?? false));
+    }
+}
