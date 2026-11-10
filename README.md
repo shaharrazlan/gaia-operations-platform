@@ -33,7 +33,7 @@ dotnet run --project src/Gaia.Api --launch-profile http
 ```
 
 ```powershell
-npm --prefix client install
+npm --prefix client ci        # first time only: installs the client packages from package-lock.json
 npm --prefix client run dev
 ```
 
@@ -46,6 +46,19 @@ npm --prefix client run dev
 | Component (client) | `npm --prefix client test -- --run` |
 | E2E (Playwright) | `npm --prefix client run e2e` (first time: `npx --prefix client playwright install chromium`) |
 | All | `powershell -ExecutionPolicy Bypass -File scripts/test-all.ps1` |
+
+Before running the client levels by hand the first time, install the client packages: `npm --prefix client ci` (`test-all.ps1` and `run.ps1` do this themselves when they're missing). The component run includes a scan of the client build for leaked keys (R13.AC6); it runs only when a build exists, so run `npm --prefix client run build` first (`test-all.ps1` does). Before the E2E tests, `test-all.ps1` restarts the LocalDB instance (see Troubleshooting).
+
+## Troubleshooting
+
+**The API answers `503 database_unavailable`, or the E2E run stops with "Timed out waiting 120000ms from config.webServer".** LocalDB has stalled. This happens when the machine is short of free memory, typically right after the integration tests, which create and drop many test databases. Restart it:
+
+```powershell
+sqllocaldb stop MSSQLLocalDB
+sqllocaldb start MSSQLLocalDB
+```
+
+Closing other memory-heavy programs (and `dotnet build-server shutdown`) helps it stay up.
 
 ## Database
 

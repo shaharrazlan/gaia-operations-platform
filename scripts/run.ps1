@@ -7,8 +7,10 @@ $quotedRoot = $root -replace "'", "''"
 
 if (-not (Test-Path (Join-Path $root 'client/node_modules'))) {
     Write-Host 'Installing client packages (first run only)...'
-    npm --prefix (Join-Path $root 'client') install
-    if ($LASTEXITCODE -ne 0) { throw 'npm install failed.' }
+    # "ci" installs exactly what package-lock.json lists. (npm 11's "install" ignores --prefix and looks for
+    # package.json in the current folder.)
+    npm --prefix (Join-Path $root 'client') ci
+    if ($LASTEXITCODE -ne 0) { throw 'npm ci failed.' }
 }
 
 Write-Host 'Starting the API on http://localhost:5080 ...'
