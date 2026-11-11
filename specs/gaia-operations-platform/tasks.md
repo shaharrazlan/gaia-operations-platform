@@ -666,13 +666,14 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 ## S15 · Number precision + long values   (Should) · ~0.75 h — added 2026-11-11 after user testing
 
-- [ ] **T71 · At most 15 significant digits per number input**
+- [x] **T71 · At most 15 significant digits per number input**
   - Covers: R3.AC6 · Step S15
   - Files: `src/Gaia.Core/Operations/InputParser.cs`, `tests/Gaia.Core.Tests/Operations/InputParserTests.cs`
   - Tests: unit "R3.AC6: more than 15 significant digits is rejected naming the field" (table), "R3.AC6: up to 15 significant digits is accepted, leading/trailing zeros not counted" (table); existing "T14: every numeric result is a valid numeric input" stays green
   - Depends on: —
   - Done when: tests pass; unit suite green.
   - Commit: —
+  - Note: red seen first (6 rejected cases passed through). Significant digits = digits with the sign and point removed and zeros trimmed from both ends, so every shown result (at most 15 significant digits) is still a valid input. Coordinates go through the same check. Unit 319/319.
 
 - [ ] **T72 · Long values wrap inside the calculator card**
   - Covers: R5.AC6 · Step S15

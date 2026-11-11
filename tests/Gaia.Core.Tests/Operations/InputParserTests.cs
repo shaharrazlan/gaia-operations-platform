@@ -89,4 +89,40 @@ public class InputParserTests
 
         Assert.Equal("fieldA", error.Field);
     }
+
+    [Theory]
+    [InlineData("4654654656464556556666666616")]   // the case found in user testing (28 digits)
+    [InlineData("1234567890123456")]               // 16
+    [InlineData("-1234567890123456")]
+    [InlineData("0.1234567890123456")]             // 16 after the leading zero
+    [InlineData("1234567890.123456")]              // 16 in total
+    public void R3_AC6_more_than_15_significant_digits_is_rejected_naming_the_field(string raw)
+    {
+        var error = Assert.Throws<ValidationException>(() => InputParser.Parse(InputType.Number, raw, "1"));
+
+        Assert.Equal("fieldA", error.Field);
+        Assert.Contains("15 significant digits", error.Message);
+    }
+
+    [Theory]
+    [InlineData("123456789012345", 123456789012345)]
+    [InlineData("-123456789012345", -123456789012345)]
+    [InlineData("100000000000000000000", 1e20)]          // trailing zeros don't count
+    [InlineData("0.000000000000000001", 1e-18)]          // leading zeros don't count
+    [InlineData("000123.4500", 123.45)]
+    [InlineData("279279279387873000000000000000", 2.79279279387873e29)]   // a result the platform showed
+    public void R3_AC6_up_to_15_significant_digits_is_accepted_and_zeros_around_them_dont_count(string raw, double expected)
+    {
+        var (a, _) = InputParser.Parse(InputType.Number, raw, "1");
+
+        Assert.Equal(new NumberValue(expected), a);
+    }
+
+    [Fact]
+    public void R3_AC6_coordinates_follow_the_same_digit_limit()
+    {
+        var error = Assert.Throws<ValidationException>(() => InputParser.Parse(InputType.Coordinate, "32.0812345678901234", "34.78"));
+
+        Assert.Equal("fieldA", error.Field);
+    }
 }

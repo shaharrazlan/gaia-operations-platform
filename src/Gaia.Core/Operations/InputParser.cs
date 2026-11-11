@@ -13,6 +13,9 @@ public static partial class InputParser
 {
     public const int MaxLength = 200;
 
+    /// <summary>The precision of a double, and the most digits a result is shown with (ResultFormatter).</summary>
+    public const int MaxSignificantDigits = 15;
+
     public static (Value A, Value B) Parse(InputType type, string? fieldA, string? fieldB) =>
         (ParseOne(type, fieldA, "fieldA", "Field A"), ParseOne(type, fieldB, "fieldB", "Field B"));
 
@@ -39,6 +42,15 @@ public static partial class InputParser
         // Only plain decimals: optional minus, digits, optional ".digits". No "1e3", "3,5", "+5", "1.".
         if (!PlainDecimal().IsMatch(trimmed))
             throw new ValidationException($"{label} must be a number like 12 or -2.5.", field);
+
+        // Numbers are calculated with ~15 significant digits (double). A longer input would give a result that looks
+        // exact but isn't, so refuse it (R3.AC6). Zeros before the first and after the last other digit don't count:
+        // "100000000000000000000" and "0.0000001" each have 1. Results are shown with at most 15, so they fit too.
+        var significantDigits = trimmed.TrimStart('-').Replace(".", "", StringComparison.Ordinal).Trim('0').Length;
+        if (significantDigits > MaxSignificantDigits)
+            throw new ValidationException(
+                $"{label} has more than {MaxSignificantDigits} significant digits. Calculations are precise to {MaxSignificantDigits} digits, so use at most {MaxSignificantDigits} (e.g. 123456789012345).",
+                field);
 
         var number = double.Parse(trimmed, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
         if (!double.IsFinite(number))
