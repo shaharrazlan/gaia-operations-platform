@@ -628,7 +628,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: refactor, no behaviour change: build with 0 warnings; unit, integration, component and E2E all green
   - Depends on: —
   - Done when: Program.cs reads as an outline (registration calls + pipeline); `// A34D` still line 1; every level green; CI green.
-  - Commit: —
+  - Commit: d592bb4
   - Note: Program.cs is now an outline (logging, six `AddGaia…` calls, database startup, key warning, the pipeline). Code moved unchanged into `Extensions/`: `ServiceCollectionExtensions` (database, services, weather), `ApiExtensions` (controllers + bad-request format, ProblemDetails, startup key warning), `SwaggerExtensions`, and `DatabaseExtensions` (was `DatabaseStartup.cs`, moved with `git mv`; `PrepareDatabaseAsync` is now an extension on `WebApplication`). Also: comment wording (RFC 9457, FormulaEngine save vs run steps), README layout. Build 0 warnings, no unused usings; unit 299, integration 111, component 67, E2E 5.
 
 ## Submit (always last)
