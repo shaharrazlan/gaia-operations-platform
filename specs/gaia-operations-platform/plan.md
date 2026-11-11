@@ -92,8 +92,8 @@ flowchart LR
 |---|---|---|---|---|
 | `GET /operations` | `?includeDisabled=true` (management list, **key required**; also used by the UI to check a key) | `OperationDto[]` — enabled, non-deleted by default | 401 `unauthorized` (includeDisabled only) | S4 (filter param S6, key S12) |
 | `POST /operations/{id}/execute` | `{ fieldA, fieldB }` | `ExecuteResponse` | 400 validation · 404 not found · 422 domain · 502/504 external | S4 |
-| `POST /operations` | `OperationUpsertDto` | 201 + `OperationDto` | 400 validation/formula · 409 duplicate id | S6 |
-| `PUT /operations/{id}` | `OperationUpsertDto` incl. `version` | `OperationDto` (new `version`) | 400 · 404 · 400 `system_logic_readonly` · 409 `edit_conflict` | S6 |
+| `POST /operations` | `OperationUpsertDto` | 201 + `OperationDto` | 400 validation/formula · 409 duplicate id · 409 duplicate name (S14) | S6 |
+| `PUT /operations/{id}` | `OperationUpsertDto` incl. `version` | `OperationDto` (new `version`) | 400 · 404 · 400 `system_logic_readonly` · 409 `edit_conflict` · 409 `duplicate_name` (S14) | S6 |
 | `DELETE /operations/{id}` | — | 204 | 404 · 400 `system_cannot_delete` | S6 |
 
 Any endpoint may also return **503** `database_unavailable`. POST, PUT, DELETE and `GET ?includeDisabled=true` require `X-Management-Key` and return **401** `unauthorized` without a valid one (S12).
@@ -110,7 +110,7 @@ ExecuteResponse     { operationId, fieldA, fieldB, result: string,
 RunDto              { fieldA, fieldB, result, createdAtUtc }
 ```
 
-- **Errors** are RFC 9457 (formerly 7807) `ProblemDetails` with an extra machine-readable `code` (R2.AC6): `validation_error`, `operation_not_found`, `formula_invalid`, `duplicate_id`, `system_logic_readonly`, `system_cannot_delete`, `edit_conflict`, `unauthorized`, `domain_error`, `external_service_error`, `external_service_timeout`, `database_unavailable`, `internal_error`; plus `field` when it applies and `correlationId`.
+- **Errors** are RFC 9457 (formerly 7807) `ProblemDetails` with an extra machine-readable `code` (R2.AC6): `validation_error`, `operation_not_found`, `formula_invalid`, `duplicate_id`, `duplicate_name`, `system_logic_readonly`, `system_cannot_delete`, `edit_conflict`, `unauthorized`, `domain_error`, `external_service_error`, `external_service_timeout`, `database_unavailable`, `internal_error`; plus `field` when it applies and `correlationId`.
 - Every response carries an `X-Correlation-Id` header (S9).
 - History block for an execute is computed **after** the current run is stored: `previousRuns` = 3 most recent successful runs of the same operation excluding the current run (A5, A9); `monthCount` = successful runs of the operation since the 1st of the current month 00:00 Asia/Jerusalem, including the current run (A7).
 
@@ -176,6 +176,7 @@ Test names start with the AC id, e.g. `R2_AC5_divide_by_zero_returns_domain_erro
 | R4.AC7 | | ✔ two PUTs with the same `version` → first 200, second 409 `edit_conflict`; DB holds first values; PUT with fresh version → 200 | | real SQL Server rowversion |
 | R4.AC8 | ✔ TypeChecker table: each mismatch kind rejected with a plain message; valid mixes (concat, len, if with mixed branches) accepted; seeded formulas pass with their input type | ✔ POST `A ^ B` Text → 400 `formula_invalid`, catalog unchanged; PUT changing only the input type → 400 | | S13 |
 | R4.AC9 | ✔ ConstantCheck: `A / 0`, `A % (2 - 2)`, `sqrt(-1)`, `round(A, 20)`, `count(A, "")`, `replace(A, "", "x")` rejected; `A / B`, `if(B == 0, 0, A / B)` accepted | | | S13 |
+| R4.AC10 | ✔ CatalogService: same name (any case, spaces) refused on create and rename; own name kept; deleted names reusable; disabled names count | ✔ POST second "Mean" → 409 `duplicate_name`, catalog unchanged; PUT rename onto another name → 409; filtered unique index (race) → 409 `duplicate_name` | | S14 |
 | R5.AC1 | | | Component: select options = fake catalog | |
 | R5.AC2 | | | Component: labels change on select | |
 | R5.AC3 | | | Component + E2E | |
@@ -322,6 +323,12 @@ Integration tests create a uniquely named LocalDB database per test class (`Gaia
   - New: `src/Gaia.Core/Formulas/TypeChecker.cs`, `src/Gaia.Core/Formulas/ConstantCheck.cs`, `src/Gaia.Core/Formulas/OperatorRules.cs` (operator signatures and wording shared with the Evaluator).
   - Changed: `FormulaEngine.Validate` (now takes the input type), `CatalogService.CheckFormula`, the Evaluator's run-time message, `OperationForm.jsx` (hints) and `styles.css`.
 - **Done when:** the R4.AC8/AC9 unit and integration tests and the R12.AC9 component test pass; all levels green; README formula section updated.
+
+### S14 · Unique operation names   (Should) · ~0.75 h — added 2026-11-11 after user review
+- **Delivers:** R4.AC10
+- **Depends on:** S6, S13
+- **Files owned:** `CatalogService.cs` (name check), `ErrorCodes.cs` (`duplicate_name`), `OperationEntityConfig.cs` + a new migration (filtered unique index `IX_Operations_Name` on `Name` where `IsDeleted = 0`; the migration first makes existing clashing names unique), `EfOperationRepository.cs` (index violation → `duplicate_name`), tests, README.
+- **Done when:** the R4.AC10 unit and integration tests pass; all levels green; README updated.
 
 **Budget:** Must S1–S5 + S10 = **9.25 h** · + Should S6, S7, S12, S11 = **14.25 h** · + Could S8–S9 = **17.25 h**. That's ~1.25 h over the original 12–16 h budget (C11); **the user accepted 17.25 h with everything in, CI included (2026-11-09).** Build order: S1→S5, S6, S7, S12, S8, S9, S10, S11.
 

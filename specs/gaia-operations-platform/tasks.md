@@ -631,6 +631,32 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Commit: d592bb4
   - Note: Program.cs is now an outline (logging, six `AddGaia…` calls, database startup, key warning, the pipeline). Code moved unchanged into `Extensions/`: `ServiceCollectionExtensions` (database, services, weather), `ApiExtensions` (controllers + bad-request format, ProblemDetails, startup key warning), `SwaggerExtensions`, and `DatabaseExtensions` (was `DatabaseStartup.cs`, moved with `git mv`; `PrepareDatabaseAsync` is now an extension on `WebApplication`). Also: comment wording (RFC 9457, FormulaEngine save vs run steps), README layout. Build 0 warnings, no unused usings; unit 299, integration 111, component 67, E2E 5.
 
+## S14 · Unique operation names   (Should) · ~0.75 h — added 2026-11-11 after user review
+
+- [ ] **T68 · Name check in CatalogService**
+  - Covers: R4.AC10 · Step S14
+  - Files: `src/Gaia.Core/Services/CatalogService.cs`, `src/Gaia.Core/Errors/ErrorCodes.cs`, `tests/Gaia.Core.Tests/Services/CatalogServiceTests.cs`
+  - Tests: unit "R4.AC10: creating a second operation with the same name (any case, spaces) is refused", "R4.AC10: renaming onto another operation's name is refused", "R4.AC10: keeping or re-casing its own name is allowed", "R4.AC10: a deleted operation's name can be reused", "R4.AC10: a disabled operation's name still counts"
+  - Depends on: —
+  - Done when: tests pass; unit suite green.
+  - Commit: —
+
+- [ ] **T69 · Unique index in the database**
+  - Covers: R4.AC10 · Step S14
+  - Files: `src/Gaia.Infrastructure/Data/OperationEntityConfig.cs`, `src/Gaia.Infrastructure/Data/EfOperationRepository.cs`, new migration in `src/Gaia.Infrastructure/Data/Migrations/`, `tests/Gaia.Api.Tests/Api/ManagementTests.cs` (+ any test that reused a name)
+  - Tests: integration "R4_AC10_POST_a_second_operation_with_the_same_name_is_409_duplicate_name", "R4_AC10_PUT_renaming_onto_another_name_is_409_duplicate_name", "R4_AC10_the_database_refuses_a_duplicate_name_even_past_the_service" (index violation → 409 `duplicate_name`)
+  - Depends on: T68
+  - Done when: tests pass; migration applies on an existing database; integration suite green.
+  - Commit: —
+
+- [ ] **T70 · S14 docs, review, all levels**
+  - Covers: S14 · Step S14
+  - Files: `README.md` (errors table, known limitations), `specs/gaia-operations-platform/plan.md` (Submission notes)
+  - Tests: every level green (`scripts/test-all.ps1`); CI green after push
+  - Depends on: T68, T69
+  - Done when: review findings fixed; pushed; CI green.
+  - Commit: —
+
 ## Submit (always last)
 
 - [x] **T56 · Polish & submit**: README (setup, run, test commands, formula language reference, interpretations A5/A8/A9, Security section, known limitations, trade-offs), no secrets beyond the documented dev key, clean history, Submission notes in plan.md, create the **private** GitHub repo and push (needs your OK), invite the reviewer.
