@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Gaia.Api.Errors;
+using Gaia.Api.Extensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -61,6 +62,6 @@ public class ApiEdgeTests(GaiaApiFactory factory) : IClassFixture<GaiaApiFactory
     [InlineData("Server=(localdb)\\MSSQLLocalDB;Database=GaiaDev;Trusted_Connection=True", false)]
     public void T19_E2E_only_ever_deletes_a_database_named_GaiaE2E(string connectionString, bool allowed)
     {
-        Assert.Equal(allowed, DatabaseStartup.IsE2EDatabase(connectionString));
+        Assert.Equal(allowed, DatabaseExtensions.IsE2EDatabase(connectionString));
     }
 }

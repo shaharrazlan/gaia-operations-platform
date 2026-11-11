@@ -180,7 +180,8 @@ src/Gaia.Core            business logic, no framework dependencies
   History/                 RunRecorder (stores every run), IsraelMonth (start of month in Israel time)
   Errors/                  ValidationException, NotFoundException, DomainException, ConflictException, …
 src/Gaia.Infrastructure  EF Core (SQL Server): DbContext, repositories, migrations with seed data; weather handlers
-src/Gaia.Api             controllers, error → problem-details mapping, management-key filter, logging, Program.cs
+src/Gaia.Api             Program.cs (a short outline), Extensions/ (service registration, database startup),
+                           controllers, error → problem-details mapping, management-key filter, logging
 client/src               api/ (HTTP client), views/ (Calculator, Manage), components/ (form, key gate, history)
 tests/                   Gaia.Core.Tests (unit), Gaia.Api.Tests (integration); client/e2e (Playwright)
 specs/                   spec.md (requirements), plan.md (design), tasks.md (build log), verify.md (checks)

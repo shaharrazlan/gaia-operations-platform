@@ -110,7 +110,7 @@ ExecuteResponse     { operationId, fieldA, fieldB, result: string,
 RunDto              { fieldA, fieldB, result, createdAtUtc }
 ```
 
-- **Errors** are RFC 7807 `ProblemDetails` with an extra machine-readable `code` (R2.AC6): `validation_error`, `operation_not_found`, `formula_invalid`, `duplicate_id`, `system_logic_readonly`, `system_cannot_delete`, `edit_conflict`, `unauthorized`, `domain_error`, `external_service_error`, `external_service_timeout`, `database_unavailable`, `internal_error`; plus `field` when it applies and `correlationId`.
+- **Errors** are RFC 9457 (formerly 7807) `ProblemDetails` with an extra machine-readable `code` (R2.AC6): `validation_error`, `operation_not_found`, `formula_invalid`, `duplicate_id`, `system_logic_readonly`, `system_cannot_delete`, `edit_conflict`, `unauthorized`, `domain_error`, `external_service_error`, `external_service_timeout`, `database_unavailable`, `internal_error`; plus `field` when it applies and `correlationId`.
 - Every response carries an `X-Correlation-Id` header (S9).
 - History block for an execute is computed **after** the current run is stored: `previousRuns` = 3 most recent successful runs of the same operation excluding the current run (A5, A9); `monthCount` = successful runs of the operation since the 1st of the current month 00:00 Asia/Jerusalem, including the current run (A7).
 

@@ -5,14 +5,14 @@ using Gaia.Infrastructure.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace Gaia.Api;
+namespace Gaia.Api.Extensions;
 
 /// <summary>What the API does with its database when it starts.</summary>
-public static class DatabaseStartup
+public static class DatabaseExtensions
 {
     public const string E2EDatabasePrefix = "GaiaE2E";
 
-    public static async Task PrepareAsync(WebApplication app)
+    public static async Task PrepareDatabaseAsync(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<GaiaDbContext>();

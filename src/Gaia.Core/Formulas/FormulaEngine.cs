@@ -5,7 +5,8 @@ namespace Gaia.Core.Formulas;
 /// <summary>
 /// The one entry point the rest of the platform uses for formulas:
 /// <see cref="Validate"/> when an operator saves a formula, <see cref="Evaluate"/> when a user runs it.
-/// Pipeline: text inputs → <see cref="InputParser"/> → <see cref="Tokenizer"/> → <see cref="FormulaParser"/>
+/// Saving: <see cref="Tokenizer"/> → <see cref="FormulaParser"/> → <see cref="TypeChecker"/> → <see cref="ConstantCheck"/>.
+/// Running: text inputs → <see cref="InputParser"/> → <see cref="Tokenizer"/> → <see cref="FormulaParser"/>
 /// → <see cref="Evaluator"/> → <see cref="ResultFormatter"/>.
 /// </summary>
 public static class FormulaEngine

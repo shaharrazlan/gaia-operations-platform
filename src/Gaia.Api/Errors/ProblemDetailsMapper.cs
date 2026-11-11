@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Gaia.Api.Errors;
 
 /// <summary>
-/// Turns every exception into an RFC 7807 ProblemDetails response with a machine-readable
+/// Turns every exception into an RFC 9457 ProblemDetails response with a machine-readable
 /// "code" (and "field" when it applies), so external apps never have to parse messages (R2.AC6).
 /// Expected business errors (GaiaException) show their message; anything else shows a generic text,
 /// never internal details or stack traces. Those go to the error log instead (R10).

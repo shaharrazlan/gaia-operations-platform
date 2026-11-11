@@ -620,6 +620,17 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - All levels green: unit 299, integration 111, component 67, E2E 5. E2E was re-run after dropping a stale `GaiaE2E` entry from the two-LocalDB setup on this machine.
   - Checked in the browser: the hints show under the fields; saving `A ^ B` with Text shows the new message and saves nothing.
 
+## Refactors (after submission prep)
+
+- [x] **T67 · Move service registration out of Program.cs**
+  - Covers: NFR4 (explainable code) · user request 2026-11-10
+  - Files: `src/Gaia.Api/Extensions/ServiceCollectionExtensions.cs`, `src/Gaia.Api/Extensions/ApiExtensions.cs`, `src/Gaia.Api/Extensions/SwaggerExtensions.cs`, `src/Gaia.Api/Program.cs`
+  - Tests: refactor, no behaviour change: build with 0 warnings; unit, integration, component and E2E all green
+  - Depends on: —
+  - Done when: Program.cs reads as an outline (registration calls + pipeline); `// A34D` still line 1; every level green; CI green.
+  - Commit: —
+  - Note: Program.cs is now an outline (logging, six `AddGaia…` calls, database startup, key warning, the pipeline). Code moved unchanged into `Extensions/`: `ServiceCollectionExtensions` (database, services, weather), `ApiExtensions` (controllers + bad-request format, ProblemDetails, startup key warning), `SwaggerExtensions`, and `DatabaseExtensions` (was `DatabaseStartup.cs`, moved with `git mv`; `PrepareDatabaseAsync` is now an extension on `WebApplication`). Also: comment wording (RFC 9457, FormulaEngine save vs run steps), README layout. Build 0 warnings, no unused usings; unit 299, integration 111, component 67, E2E 5.
+
 ## Submit (always last)
 
 - [x] **T56 · Polish & submit**: README (setup, run, test commands, formula language reference, interpretations A5/A8/A9, Security section, known limitations, trade-offs), no secrets beyond the documented dev key, clean history, Submission notes in plan.md, create the **private** GitHub repo and push (needs your OK), invite the reviewer.
