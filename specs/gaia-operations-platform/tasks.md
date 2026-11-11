@@ -672,7 +672,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: unit "R3.AC6: more than 15 significant digits is rejected naming the field" (table), "R3.AC6: up to 15 significant digits is accepted, leading/trailing zeros not counted" (table); existing "T14: every numeric result is a valid numeric input" stays green
   - Depends on: —
   - Done when: tests pass; unit suite green.
-  - Commit: —
+  - Commit: d63fe38
   - Note: red seen first (6 rejected cases passed through). Significant digits = digits with the sign and point removed and zeros trimmed from both ends, so every shown result (at most 15 significant digits) is still a valid input. Coordinates go through the same check. Unit 319/319.
 
 - [x] **T72 · Long values wrap inside the calculator card**
@@ -681,7 +681,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: E2E "R5.AC6: a very long result and its history row stay inside the card (no sideways scroll)"
   - Depends on: —
   - Done when: E2E green; component suite and lint green.
-  - Commit: —
+  - Commit: bee4d15
   - Note: red seen first with the CSS fix set aside (page overflowed sideways by 1816 px), green with it. History cells may break anywhere; the time cell stays on one line. Checked in the browser at 800 px and 375 px (no overflow). The E2E test finds the card by `data-testid`, not a CSS class.
 
 - [x] **T73 · S15 docs, review, all levels**
@@ -690,7 +690,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: every level green (`scripts/test-all.ps1`); CI green after push
   - Depends on: T71, T72
   - Done when: review findings fixed; pushed; CI green.
-  - Commit: —
+  - Commit: bee4d15
   - Review (high), 4 findings, all fixed: a README note that JSON numbers over 15 significant digits are refused; README counts and Submission notes; the E2E test uses a test id; T72's file list. All levels green: unit 319, integration 116, component 67, E2E 6; build 0 warnings.
 
 ## Submit (always last)
