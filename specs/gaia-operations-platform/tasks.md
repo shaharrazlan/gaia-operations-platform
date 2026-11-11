@@ -642,13 +642,14 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Commit: —
   - Note: red seen first (5 refused cases passed through; the 3 "allowed" cases already passed). The check loads the catalog (enabled + disabled) and compares trimmed names ignoring case; the message names the existing operation. Unit 307/307.
 
-- [ ] **T69 · Unique index in the database**
+- [x] **T69 · Unique index in the database**
   - Covers: R4.AC10 · Step S14
   - Files: `src/Gaia.Infrastructure/Data/OperationEntityConfig.cs`, `src/Gaia.Infrastructure/Data/EfOperationRepository.cs`, new migration in `src/Gaia.Infrastructure/Data/Migrations/`, `tests/Gaia.Api.Tests/Api/ManagementTests.cs` (+ any test that reused a name)
   - Tests: integration "R4_AC10_POST_a_second_operation_with_the_same_name_is_409_duplicate_name", "R4_AC10_PUT_renaming_onto_another_name_is_409_duplicate_name", "R4_AC10_the_database_refuses_a_duplicate_name_even_past_the_service" (index violation → 409 `duplicate_name`)
   - Depends on: T68
   - Done when: tests pass; migration applies on an existing database; integration suite green.
   - Commit: —
+  - Note: red seen first (the index test passed through with no index). The filtered unique index `IX_Operations_Name` (`Name`, `IsDeleted = 0`) relies on the column's case-insensitive default collation; a violation (add or rename) becomes 409 `duplicate_name`, a primary-key clash stays `duplicate_id`. The migration first renames live clashes in an existing database (later ones get " (id)"); the SQL needed `COLLATE DATABASE_DEFAULT` on the id. Added test `R4_AC10_upgrading_a_database_with_clashing_names…` (its own database), shown to fail when the rename step is removed. Test data fixed: `ManagementTests` named every operation "Mean", and two concurrency tests renamed to "First"/"Second" — now unique per test. The repository-level tests went into `EfOperationRepositoryTests` and `MigrationTests` (not in the file list). One run stalled on LocalDB (low memory); passed after a restart.
 
 - [ ] **T70 · S14 docs, review, all levels**
   - Covers: S14 · Step S14

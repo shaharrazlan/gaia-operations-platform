@@ -28,10 +28,12 @@ public class EfOperationRepository(GaiaDbContext db) : IOperationRepository
         {
             await db.SaveChangesAsync(cancellationToken);   // fills in operation.Version
         }
-        catch (DbUpdateException e) when (e.InnerException is SqlException { Number: DuplicateKey or DuplicateIndexKey })
+        catch (DbUpdateException e) when (IsDuplicate(e, out var nameClash))
         {
-            // Another request created the same id between our duplicate check and this insert.
-            throw new ConflictException($"An operation with id '{operation.Id}' already exists.", ErrorCodes.DuplicateId, "id");
+            // Another request saved the same id or name between the service's check and this insert.
+            throw nameClash
+                ? DuplicateName(operation)
+                : new ConflictException($"An operation with id '{operation.Id}' already exists.", ErrorCodes.DuplicateId, "id");
         }
         finally
         {
@@ -55,10 +57,26 @@ public class EfOperationRepository(GaiaDbContext db) : IOperationRepository
             throw new ConflictException(
                 "This operation was changed by someone else. Reload to see the latest version.", ErrorCodes.EditConflict);
         }
+        catch (DbUpdateException e) when (IsDuplicate(e, out var nameClash) && nameClash)
+        {
+            // Renamed onto a name another request took between the service's check and this save.
+            throw DuplicateName(operation);
+        }
         finally
         {
             db.ChangeTracker.Clear();
         }
         return operation;
     }
+
+    /// <summary>Is this SQL Server's "duplicate key" error? <paramref name="nameClash"/>: was it the unique-name index (R4.AC10)?</summary>
+    private static bool IsDuplicate(DbUpdateException e, out bool nameClash)
+    {
+        var sql = e.InnerException as SqlException;
+        nameClash = sql?.Message.Contains(OperationEntityConfig.NameIndex, StringComparison.Ordinal) ?? false;
+        return sql is { Number: DuplicateKey or DuplicateIndexKey };
+    }
+
+    private static ConflictException DuplicateName(OperationDefinition operation) =>
+        new($"An operation named '{operation.Name}' already exists. Choose another name.", ErrorCodes.DuplicateName, "name");
 }

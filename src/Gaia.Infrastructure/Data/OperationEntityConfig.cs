@@ -7,6 +7,8 @@ namespace Gaia.Infrastructure.Data;
 /// <summary>Maps <see cref="OperationDefinition"/> to the Operations table.</summary>
 public class OperationEntityConfig : IEntityTypeConfiguration<OperationDefinition>
 {
+    public const string NameIndex = "IX_Operations_Name";
+
     public void Configure(EntityTypeBuilder<OperationDefinition> entity)
     {
         entity.ToTable("Operations", table =>
@@ -30,6 +32,13 @@ public class OperationEntityConfig : IEntityTypeConfiguration<OperationDefinitio
 
         // SQL Server rowversion: updated automatically on every save and used as the concurrency token.
         entity.Property(o => o.Version).IsRowVersion();
+
+        // Names are unique among live operations (R4.AC10): the service checks first; this index stops two
+        // simultaneous saves. The column's default collation ignores case, like the service. Deleted rows don't count.
+        entity.HasIndex(o => o.Name)
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0")
+            .HasDatabaseName(NameIndex);
 
         entity.Ignore(o => o.IsAvailable);
 

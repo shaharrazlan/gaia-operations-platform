@@ -133,6 +133,11 @@ namespace Gaia.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Operations_Name")
+                        .HasFilter("[IsDeleted] = 0");
+
                     b.ToTable("Operations", null, t =>
                         {
                             t.HasCheckConstraint("CK_Operations_InputType", "[InputType] IN ('Number', 'Text', 'Coordinate')");

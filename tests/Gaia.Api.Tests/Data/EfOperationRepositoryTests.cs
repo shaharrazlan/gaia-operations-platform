@@ -91,6 +91,32 @@ public class EfOperationRepositoryTests(GaiaApiFactory factory) : IClassFixture<
         Assert.False(found.IsAvailable);
     }
 
+    [Fact]
+    public async Task R4_AC10_the_database_refuses_a_duplicate_name_even_past_the_service()
+    {
+        // Two saves at the same moment can both pass the service's check; the unique index stops the second.
+        var copy = Custom($"t69-copy-{Guid.NewGuid():N}"[..30], isEnabled: true, isDeleted: false);
+        copy.Name = "divide";   // seeded "Divide": the index ignores case, like the service
+        await using var db = factory.CreateDbContext();
+
+        var error = await Assert.ThrowsAsync<Gaia.Core.Errors.ConflictException>(() => new EfOperationRepository(db).AddAsync(copy));
+
+        Assert.Equal("duplicate_name", error.Code);
+        Assert.Equal("name", error.Field);
+    }
+
+    [Fact]
+    public async Task R4_AC10_a_deleted_operations_name_can_be_used_again_in_the_database()
+    {
+        var reused = Custom($"t69-reuse-{Guid.NewGuid():N}"[..30], isEnabled: true, isDeleted: false);
+        reused.Name = _deletedId;   // the name of the deleted row added in InitializeAsync
+        await using var db = factory.CreateDbContext();
+
+        var saved = await new EfOperationRepository(db).AddAsync(reused);
+
+        Assert.Equal(_deletedId, saved.Name);
+    }
+
     private static OperationDefinition Custom(string id, bool isEnabled, bool isDeleted) => new()
     {
         Id = id,

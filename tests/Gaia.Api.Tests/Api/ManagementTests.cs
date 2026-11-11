@@ -13,10 +13,11 @@ public class ManagementTests(GaiaApiFactory factory) : IClassFixture<GaiaApiFact
     /// <summary>A unique id per test, so tests sharing this class's database never clash.</summary>
     private static string NewId(string prefix) => $"{prefix}-{Guid.NewGuid():N}"[..30];
 
-    private static object Definition(string id, string formula = "(A + B) / 2", string name = "Mean") => new
+    // Names must be unique (R4.AC10) and tests share one database, so each operation is named after its unique id.
+    private static object Definition(string id, string formula = "(A + B) / 2", string? name = null) => new
     {
         id,
-        name,
+        name = name ?? id,
         kind = "Arithmetic",
         fieldALabel = "First number",
         fieldBLabel = "Second number",
@@ -195,13 +196,13 @@ public class ManagementTests(GaiaApiFactory factory) : IClassFixture<GaiaApiFact
         var id = NewId("race");
         var loaded = await CreateAsync(id);
 
-        var first = await _client.PutAsJsonAsync($"/api/operations/{id}", Change(loaded, name: "First"));
-        var second = await _client.PutAsJsonAsync($"/api/operations/{id}", Change(loaded, name: "Second"));
+        var first = await _client.PutAsJsonAsync($"/api/operations/{id}", Change(loaded, name: $"First {id}"));
+        var second = await _client.PutAsJsonAsync($"/api/operations/{id}", Change(loaded, name: $"Second {id}"));
 
         Assert.Equal(HttpStatusCode.OK, first.StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
         Assert.Equal("edit_conflict", await CodeOf(second));
-        Assert.Equal("First", (await LoadAsync(id)).GetProperty("name").GetString());
+        Assert.Equal($"First {id}", (await LoadAsync(id)).GetProperty("name").GetString());
     }
 
     [Fact]
@@ -209,13 +210,43 @@ public class ManagementTests(GaiaApiFactory factory) : IClassFixture<GaiaApiFact
     {
         var id = NewId("fresh");
         var loaded = await CreateAsync(id);
-        var first = await _client.PutAsJsonAsync($"/api/operations/{id}", Change(loaded, name: "First"));
+        var first = await _client.PutAsJsonAsync($"/api/operations/{id}", Change(loaded, name: $"First {id}"));
         var fresh = await first.Content.ReadFromJsonAsync<JsonElement>();
 
-        var second = await _client.PutAsJsonAsync($"/api/operations/{id}", Change(fresh, name: "Second"));
+        var second = await _client.PutAsJsonAsync($"/api/operations/{id}", Change(fresh, name: $"Second {id}"));
 
         Assert.Equal(HttpStatusCode.OK, second.StatusCode);
-        Assert.Equal("Second", (await LoadAsync(id)).GetProperty("name").GetString());
+        Assert.Equal($"Second {id}", (await LoadAsync(id)).GetProperty("name").GetString());
+    }
+
+    // --- Unique names (T69) ---
+
+    [Fact]
+    public async Task R4_AC10_POST_a_second_operation_with_the_same_name_is_409_duplicate_name()
+    {
+        var id = NewId("avg-copy");
+
+        var response = await _client.PostAsJsonAsync("/api/operations", Definition(id, name: "AVERAGE"));   // seeded "Average"
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("duplicate_name", problem.GetProperty("code").GetString());
+        Assert.Equal("name", problem.GetProperty("field").GetString());
+        var all = await _client.GetFromJsonAsync<JsonElement[]>("/api/operations?includeDisabled=true");
+        Assert.DoesNotContain(all!, o => o.GetProperty("id").GetString() == id);
+    }
+
+    [Fact]
+    public async Task R4_AC10_PUT_renaming_onto_another_name_is_409_duplicate_name()
+    {
+        var id = NewId("rename");
+        var loaded = await CreateAsync(id);
+
+        var response = await _client.PutAsJsonAsync($"/api/operations/{id}", Change(loaded, name: "divide"));   // seeded "Divide"
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("duplicate_name", await CodeOf(response));
+        Assert.Equal(id, (await LoadAsync(id)).GetProperty("name").GetString());
     }
 
     [Fact]
