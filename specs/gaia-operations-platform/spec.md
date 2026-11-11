@@ -70,6 +70,7 @@ The platform ships with operations of at least three kinds, all on exactly two i
 - **R3.AC3 (weather):** Given Field A = latitude and Field B = longitude, the "weather today" operation returns today's forecast for that location including at least min and max temperature and a short description of conditions.
 - **R3.AC4 (weather failure):** When the weather provider is unreachable, slow beyond the timeout (NFR2) or returns an error, the system returns an external-service error with a readable message, not a crash.
 - **R3.AC5 (numbers):** Arithmetic accepts integers and decimals, including negative numbers, using "." as the decimal separator.
+- **R3.AC6 (precision):** Numbers are calculated with 15 significant digits, so a number input may have at most 15 significant digits (leading and trailing zeros don't count: `100000000000000000000` and `0.000000000000000001` have 1). A longer number is rejected with a validation error naming the field, instead of giving a result that looks exact but isn't. Every result the system shows has at most 15 significant digits, so it can always be typed back in.
 
 ### R4 · Manage operations without development   (Should)  [1.1 "רצוי…"]
 An operator can add, change and remove operations at runtime, with no code change, rebuild or redeploy.
@@ -93,6 +94,7 @@ A minimal UI where the user enters Field A, selects an operation, enters Field B
 - **R5.AC3:** When the user fills both fields, selects an operation and presses Calculate, the result is shown on the same screen.
 - **R5.AC4:** When the server returns an error (any kind from R2.AC6), the UI shows its message near the form; no result is shown.
 - **R5.AC5:** When the server is unreachable, the UI shows a "service unavailable" message instead of failing silently.
+- **R5.AC6 (long values):** Long inputs, results and history values wrap inside the calculator card; the page never needs to scroll sideways.
 
 ### R6 · Business logic lives on the server   (Must)  [2.2.1, 2.2.2]
 All computation and validation rules live in the server; the client only displays.
@@ -215,3 +217,4 @@ The server writes a log of every API request and its response.
 | 2026-11-09 | Spec re-approved with R13 | User approval in conversation |
 | 2026-11-10 | Added R4.AC8 (type check on save), R4.AC9 (always-failing fixed parts), R12.AC9 (form field help), A11 | User testing: `A ^ B` saved with input type Text could never run, and failed only in the Calculator with a technical message; user approved the save-time check ("go ahead and think of more cases like this") |
 | 2026-11-11 | Added R4.AC10 (unique operation names) and A12; removed the "names aren't unique" limitation | User review: the Calculator shows names, so two operations with the same name couldn't be told apart; user chose to make names unique |
+| 2026-11-11 | Added R3.AC6 (at most 15 significant digits per number input) and R5.AC6 (long values wrap) | User testing: a 28-digit input gave a result whose trailing digits were silently zeros, and the long values overflowed the history table |

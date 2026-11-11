@@ -167,6 +167,7 @@ Test names start with the AC id, e.g. `R2_AC5_divide_by_zero_returns_domain_erro
 | R3.AC3 | ✔ handler maps Open-Meteo JSON → "Partly cloudy, 12–21 °C" | ✔ execute weather with stubbed HTTP | | |
 | R3.AC4 | ✔ handler: 500, timeout, bad JSON → ExternalServiceException | ✔ 502/504 + code | | |
 | R3.AC5 | ✔ "-2.5" and "10" accepted; "3,5", "1e3" and "abc" rejected | | | |
+| R3.AC6 | ✔ 16+ significant digits rejected naming the field ("1234567890123456", the 28-digit case, "0.1234567890123456"); 15 accepted; leading/trailing zeros not counted ("100000000000000000000"); every formatted result is a valid input | | | S15 |
 | R4.AC1 | | ✔ POST then GET + execute, same host, no restart | E2E: add "average2", use it | |
 | R4.AC2 | | ✔ PUT formula → next execute uses it | | |
 | R4.AC3 | | ✔ DELETE → absent + 404 on execute; runs still in DB | | |
@@ -182,6 +183,7 @@ Test names start with the AC id, e.g. `R2_AC5_divide_by_zero_returns_domain_erro
 | R5.AC3 | | | Component + E2E | |
 | R5.AC4 | | | Component: problem `detail` shown, no result | |
 | R5.AC5 | | | Component: fetch rejects → "Service unavailable" | |
+| R5.AC6 | | | E2E: after a ~300-digit result and its history row, neither the page nor the calculator card scrolls sideways | S15 |
 | R6.AC1 | | | Component: shown result == fake API value (fake returns a value no client math would produce) | |
 | R6.AC2 | | ✔ same inputs via HTTP == service result | | |
 | R12.AC1 | | | Component: switch views both ways | |
@@ -329,6 +331,12 @@ Integration tests create a uniquely named LocalDB database per test class (`Gaia
 - **Depends on:** S6, S13
 - **Files owned:** `CatalogService.cs` (name check), `ErrorCodes.cs` (`duplicate_name`), `OperationEntityConfig.cs` + a new migration (filtered unique index `IX_Operations_Name` on `Name` where `IsDeleted = 0`; the migration first makes existing clashing names unique), `EfOperationRepository.cs` (index violation → `duplicate_name`), tests, README.
 - **Done when:** the R4.AC10 unit and integration tests pass; all levels green; README updated.
+
+### S15 · Number precision + long values   (Should) · ~0.75 h — added 2026-11-11 after user testing
+- **Delivers:** R3.AC6, R5.AC6
+- **Depends on:** S2, S5, S8
+- **Files owned:** `InputParser.cs` (significant-digit limit), `styles.css` (wrapping in the result and history), a new E2E test, tests, README.
+- **Done when:** the R3.AC6 unit tests and the R5.AC6 E2E test pass; all levels green; README updated.
 
 **Budget:** Must S1–S5 + S10 = **9.25 h** · + Should S6, S7, S12, S11 = **14.25 h** · + Could S8–S9 = **17.25 h**. That's ~1.25 h over the original 12–16 h budget (C11); **the user accepted 17.25 h with everything in, CI included (2026-11-09).** Build order: S1→S5, S6, S7, S12, S8, S9, S10, S11.
 

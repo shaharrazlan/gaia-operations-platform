@@ -664,6 +664,32 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - README: `duplicate_name` in the errors table, a "Names are unique" design note, the limitation removed, test counts updated.
   - All levels green: unit 307, integration 116, component 67, E2E 5; build 0 warnings.
 
+## S15 · Number precision + long values   (Should) · ~0.75 h — added 2026-11-11 after user testing
+
+- [ ] **T71 · At most 15 significant digits per number input**
+  - Covers: R3.AC6 · Step S15
+  - Files: `src/Gaia.Core/Operations/InputParser.cs`, `tests/Gaia.Core.Tests/Operations/InputParserTests.cs`
+  - Tests: unit "R3.AC6: more than 15 significant digits is rejected naming the field" (table), "R3.AC6: up to 15 significant digits is accepted, leading/trailing zeros not counted" (table); existing "T14: every numeric result is a valid numeric input" stays green
+  - Depends on: —
+  - Done when: tests pass; unit suite green.
+  - Commit: —
+
+- [ ] **T72 · Long values wrap inside the calculator card**
+  - Covers: R5.AC6 · Step S15
+  - Files: `client/src/styles.css`, `client/e2e/layout.spec.js`
+  - Tests: E2E "R5.AC6: a very long result and its history row stay inside the card (no sideways scroll)"
+  - Depends on: —
+  - Done when: E2E green; component suite and lint green.
+  - Commit: —
+
+- [ ] **T73 · S15 docs, review, all levels**
+  - Covers: S15 · Step S15
+  - Files: `README.md` (formula rules, known limitations, counts), `specs/gaia-operations-platform/plan.md` (Submission notes)
+  - Tests: every level green (`scripts/test-all.ps1`); CI green after push
+  - Depends on: T71, T72
+  - Done when: review findings fixed; pushed; CI green.
+  - Commit: —
+
 ## Submit (always last)
 
 - [x] **T56 · Polish & submit**: README (setup, run, test commands, formula language reference, interpretations A5/A8/A9, Security section, known limitations, trade-offs), no secrets beyond the documented dev key, clean history, Submission notes in plan.md, create the **private** GitHub repo and push (needs your OK), invite the reviewer.
