@@ -701,7 +701,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: none added — the marker test is removed with its requirement; build, unit and component tests green; CI green
   - Depends on: —
   - Done when: no "A34D" left in code, tests or README; build 0 warnings; pushed; CI green.
-  - Commit: —
+  - Commit: 8ddb2f1
   - Note: decided after checking the original Word file: the "A34D" sentence is the only hidden text (white, 11 runs; A/34/D split into separate runs); nothing else is hidden (footnotes, footer, comments, tracked changes, fields, styles, metadata checked), and all 47 visible paragraphs match assignment.md word for word. Removed the comment (Program.cs line 1), `MarkerTests.cs`, the README line; spec C4/NFR5 struck with the reason. Release build 0 errors (the Debug build was locked by the running app), unit 318/318, no unused usings. The old commits still contain the comment (history is not rewritten).
 
 ## Submit (always last)
