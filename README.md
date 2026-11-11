@@ -60,8 +60,8 @@ npm --prefix client run dev
 
 | Level | What it covers | Command | Count |
 |---|---|---|---|
-| Unit (server) | formula engine, services, history rules, weather handler | `dotnet test tests/Gaia.Core.Tests` | 299 |
-| Integration (server, needs LocalDB) | the HTTP API against a real SQL Server database (one test database per test class, dropped afterwards), logs | `dotnet test tests/Gaia.Api.Tests` | 111 |
+| Unit (server) | formula engine, services, history rules, weather handler | `dotnet test tests/Gaia.Core.Tests` | 307 |
+| Integration (server, needs LocalDB) | the HTTP API against a real SQL Server database (one test database per test class, dropped afterwards), logs | `dotnet test tests/Gaia.Api.Tests` | 116 |
 | Component (client) | React views with a fake API | `npm --prefix client test -- --run` | 67 |
 | E2E (Playwright) | the real app in Chromium: calculate, error, add a formula and use it, history | `npm --prefix client run e2e` (first time: `npx --prefix client playwright install chromium`) | 5 |
 | All | every level in order, stops at the first failure | `powershell -ExecutionPolicy Bypass -File scripts/test-all.ps1` | |
@@ -135,6 +135,7 @@ curl -X DELETE http://localhost:5080/api/operations/triple -H "X-Management-Key:
 | 401 | `unauthorized` | a management call without the right key |
 | 404 | `operation_not_found` | an unknown, disabled or deleted operation |
 | 409 | `duplicate_id` | adding an id that exists (or existed) |
+| 409 | `duplicate_name` | another operation (enabled or disabled) already has that name, ignoring case |
 | 409 | `edit_conflict` | saving with an old `version`: someone else changed it first; reload |
 | 422 | `domain_error` | the operation can't produce a result (division by zero, √−1) |
 | 502 / 504 | `external_service_error`, `external_service_timeout` | the weather service failed or took more than 5 s |
@@ -244,6 +245,7 @@ Where the assignment was open to more than one reading, this is the reading used
 **Other decisions:**
 - **Concurrent edits.** Saving an operation sends the version it was loaded with; if someone saved in between, the save is refused with `edit_conflict` instead of silently overwriting (optimistic concurrency, a SQL Server `rowversion`). The Manage form keeps what you typed and offers **Reload**.
 - **Delete is soft.** The row stays, marked deleted, so its history stays readable. A deleted id can't be reused, so history never mixes two different operations.
+- **Names are unique.** Users pick operations by name in the Calculator, so two operations (enabled or disabled) can't share a name, ignoring case. Saving a clash gives 409 `duplicate_name`. A deleted operation's name can be used again. The database enforces it too, with a unique index, so two simultaneous saves can't both win.
 - **The UI is a client like any other.** It calls the same public API an external app would, and computes nothing itself. The Vite dev server proxies `/api` to the API, so the browser needs no CORS setup.
 
 ## Security
@@ -265,7 +267,6 @@ Where the assignment was open to more than one reading, this is the reading used
 ## Known limitations
 
 - **Number precision.** Numbers are 64-bit floating point, shown with at most 15 significant digits and 15 decimals. A result smaller than 1e-15 shows as `0`, and a huge result (over 200 digits) can't be typed back in as an input.
-- **Names aren't unique.** Two operations may have the same display name; their ids differ.
 - **One input type per operation.** A and B always share one input type, so an operation like "repeat text A, B times" can't be defined. There is also no function that turns a text like `"5"` into the number 5; use input type Number instead.
 - **Formulas saved before the save-time checks.** Operations saved before these checks existed aren't re-checked. They still fail safely in the Calculator, with the same plain message, until they're edited.
 - **History across a month boundary.** The E2E history test assumes it doesn't run exactly across midnight on the 1st of a month (Israel time).

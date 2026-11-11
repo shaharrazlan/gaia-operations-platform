@@ -651,13 +651,18 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Commit: —
   - Note: red seen first (the index test passed through with no index). The filtered unique index `IX_Operations_Name` (`Name`, `IsDeleted = 0`) relies on the column's case-insensitive default collation; a violation (add or rename) becomes 409 `duplicate_name`, a primary-key clash stays `duplicate_id`. The migration first renames live clashes in an existing database (later ones get " (id)"); the SQL needed `COLLATE DATABASE_DEFAULT` on the id. Added test `R4_AC10_upgrading_a_database_with_clashing_names…` (its own database), shown to fail when the rename step is removed. Test data fixed: `ManagementTests` named every operation "Mean", and two concurrency tests renamed to "First"/"Second" — now unique per test. The repository-level tests went into `EfOperationRepositoryTests` and `MigrationTests` (not in the file list). One run stalled on LocalDB (low memory); passed after a restart.
 
-- [ ] **T70 · S14 docs, review, all levels**
+- [x] **T70 · S14 docs, review, all levels**
   - Covers: S14 · Step S14
   - Files: `README.md` (errors table, known limitations), `specs/gaia-operations-platform/plan.md` (Submission notes)
   - Tests: every level green (`scripts/test-all.ps1`); CI green after push
   - Depends on: T68, T69
   - Done when: review findings fixed; pushed; CI green.
   - Commit: —
+  - Review (high), 4 findings:
+    - Fixed 3: Swagger docs now list 409 `duplicate_name`; the migration shortens the name part, not the "(id)" suffix, so a long clash can't be cut back into a clash; the Submission notes no longer list non-unique names.
+    - Skipped 1: the name check loads the whole catalog (a few dozen rows).
+  - README: `duplicate_name` in the errors table, a "Names are unique" design note, the limitation removed, test counts updated.
+  - All levels green: unit 307, integration 116, component 67, E2E 5; build 0 warnings.
 
 ## Submit (always last)
 

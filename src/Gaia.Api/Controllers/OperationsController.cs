@@ -16,7 +16,7 @@ public class OperationsController(OperationService operations, CatalogService ca
     /// <summary>Adds a custom formula operation. It can be run right away, no restart needed (R4.AC1).</summary>
     /// <response code="201">The new operation, including its "version".</response>
     /// <response code="400">validation_error / formula_invalid — "field" says which input is wrong.</response>
-    /// <response code="409">duplicate_id — the id is taken (also by a deleted operation).</response>
+    /// <response code="409">duplicate_id — the id is taken (also by a deleted operation). duplicate_name — another operation has this name (R4.AC10).</response>
     [HttpPost]
     [RequireManagementKey]
     [ProducesResponseType<OperationDto>(StatusCodes.Status201Created)]
@@ -36,7 +36,7 @@ public class OperationsController(OperationService operations, CatalogService ca
     /// <response code="200">The saved operation with its new "version".</response>
     /// <response code="400">validation_error / formula_invalid / system_logic_readonly.</response>
     /// <response code="404">operation_not_found.</response>
-    /// <response code="409">edit_conflict — reload the operation and apply your change again.</response>
+    /// <response code="409">edit_conflict — reload the operation and apply your change again. duplicate_name — another operation has this name (R4.AC10).</response>
     [HttpPut("{id}")]
     [RequireManagementKey]
     [ProducesResponseType<OperationDto>(StatusCodes.Status200OK)]

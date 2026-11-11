@@ -369,10 +369,11 @@ Integration tests create a uniquely named LocalDB database per test class (`Gaia
 
 **What was delivered:**
 - All of R1–R13: Part A, the "without development" management (API + screen + management key), and every Part B bonus (history, last 3 runs, monthly count, error log, request/response log).
+- **S14, added after review:** operation names are unique (ignoring case), so the Calculator never shows two identical names. The rule is checked in the service and enforced by a database index, and the upgrade fixes clashes in existing databases (R4.AC10, A12).
 - **S13, added after hands-on testing:** a formula that could never run is refused when it's saved, not when someone presses Calculate.
   - **Types** are checked against the input type (`A ^ B` with Text inputs is refused with a plain message saying to choose Number). Fixed parts that always fail (`A / 0`, `sqrt(-1)`) are refused too.
   - The form explains each field in one line (R4.AC8, R4.AC9, R12.AC9, A11).
-- Every acceptance criterion is traced to passing tests: unit 299, integration 111, component 67, E2E 5. CI runs the unit and component levels on every push.
+- Every acceptance criterion is traced to passing tests: unit 307, integration 116, component 67, E2E 5. CI runs the unit and component levels on every push.
 - From a fresh clone, `scripts/run.ps1` reaches a running app in under a minute (NFR3). A warm execute takes ~18 ms (NFR1).
 
 **Main trade-offs:**
@@ -384,7 +385,7 @@ Integration tests create a uniquely named LocalDB database per test class (`Gaia
 - **Floating-point numbers, shown with 15 significant digits.** Readable results and plain-decimal output that can be typed back in. Not exact decimal arithmetic.
 - **Formula checks: strict on save, lenient where it can work (A11).** A formula that can never run is refused, but anything that may work for some inputs is allowed (`if` branches of different types, `A / B`). Operations saved before the checks aren't re-checked until their formula or input type changes, so they can still be disabled.
 
-**Known limitations:** listed in the README ("Known limitations"): number precision edges, non-unique display names, one input type per operation (no "text A, number B"), formulas saved before the checks, the E2E history test across a month boundary, a shared log folder for dev and E2E, LocalDB under memory pressure, and CI covering unit and component tests only.
+**Known limitations:** listed in the README ("Known limitations"): number precision edges, one input type per operation (no "text A, number B"), formulas saved before the checks, the E2E history test across a month boundary, a shared log folder for dev and E2E, LocalDB under memory pressure, and CI covering unit and component tests only.
 
 **With more time:**
 - operator accounts and an audit log;
