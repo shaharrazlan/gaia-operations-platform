@@ -1,4 +1,3 @@
-// A34D
 // Gaia Operations Platform — server entry point: registers services, prepares the database,
 // and builds the HTTP pipeline. Business logic lives in Gaia.Core; data and weather in Gaia.Infrastructure.
 // The details of each registration are in the Extensions folder.

@@ -693,6 +693,17 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Commit: bee4d15
   - Review (high), 4 findings, all fixed: a README note that JSON numbers over 15 significant digits are refused; README counts and Submission notes; the E2E test uses a test id; T72's file list. All levels green: unit 319, integration 116, component 67, E2E 6; build 0 warnings.
 
+## Changes after submission prep
+
+- [x] **T74 · Remove the hidden-instruction marker comment**
+  - Covers: spec changelog 2026-11-12 (C4 and NFR5 dropped)
+  - Files: `src/Gaia.Api/Program.cs`, `tests/Gaia.Core.Tests/MarkerTests.cs` (deleted), `README.md`, `specs/gaia-operations-platform/verify.md` (note)
+  - Tests: none added — the marker test is removed with its requirement; build, unit and component tests green; CI green
+  - Depends on: —
+  - Done when: no "A34D" left in code, tests or README; build 0 warnings; pushed; CI green.
+  - Commit: —
+  - Note: decided after checking the original Word file: the "A34D" sentence is the only hidden text (white, 11 runs; A/34/D split into separate runs); nothing else is hidden (footnotes, footer, comments, tracked changes, fields, styles, metadata checked), and all 47 visible paragraphs match assignment.md word for word. Removed the comment (Program.cs line 1), `MarkerTests.cs`, the README line; spec C4/NFR5 struck with the reason. Release build 0 errors (the Debug build was locked by the running app), unit 318/318, no unused usings. The old commits still contain the comment (history is not rewritten).
+
 ## Submit (always last)
 
 - [x] **T56 · Polish & submit**: README (setup, run, test commands, formula language reference, interpretations A5/A8/A9, Security section, known limitations, trade-offs), no secrets beyond the documented dev key, clean history, Submission notes in plan.md, create the **private** GitHub repo and push (needs your OK), invite the reviewer.

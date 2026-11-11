@@ -220,7 +220,7 @@ Test names start with the AC id, e.g. `R2_AC5_divide_by_zero_returns_domain_erro
 | R11.AC1 | | ✔ one entry per request with all fields | | test sink |
 | R11.AC2 | | ✔ same correlation id in both logs | | |
 | NFR2 | ✔ handler times out at 5 s (fake clock/handler) | | | |
-| NFR5 | ✔ source scan finds `// A34D` in `src/Gaia.Api` | | | |
+| ~~NFR5~~ | dropped 2026-11-12 with C4 (see spec changelog) | | | |
 | NFR6 | ✔ `File.Delete("x")`, `System.IO…`, `A.GetType()` → parse error | | | |
 
 **Test tools:** xUnit · `Microsoft.AspNetCore.Mvc.Testing` · `Microsoft.Extensions.TimeProvider.Testing` · Serilog `InMemory` sink · Vitest + `@testing-library/react` + jsdom · Playwright.
@@ -260,7 +260,7 @@ Integration tests create a uniquely named LocalDB database per test class (`Gaia
 - **Done when:** integration smoke test: migrated test DB returns the 10 seeded operations.
 
 ### S4 · Catalog + execute API, weather   (Must) · ~2 h
-- **Delivers:** R1.AC1–3, R2.AC1–3, R2.AC6, R3.AC3–4, R6.AC2, NFR2, NFR5
+- **Delivers:** R1.AC1–3, R2.AC1–3, R2.AC6, R3.AC3–4, R6.AC2, NFR2 (NFR5 dropped 2026-11-12)
 - **Depends on / Unblocks:** S3 / S5, S6, S8, S9
 - **Files owned:** `OperationService`, `IOperationHandler`, `OpenMeteoWeatherHandler`, `FakeWeatherHandler`, `OperationsController` (GET, execute), `ProblemDetailsMapper`, `Program.cs` (with `// A34D` comment), Swagger setup
 - **Outline:** service loads the definition → not found if missing/disabled/deleted → parse inputs by `InputType` → formula ⇒ engine, else ⇒ handler by id → map exceptions to ProblemDetails + `code` (DB failures → 503 `database_unavailable`). Startup check: every system op with no formula has a registered handler. Migrations auto-applied in Development/E2E. `IRunRecorder` with a no-op implementation (replaced in S8). `Weather:Provider` = `OpenMeteo` | `Fake`.
@@ -356,7 +356,7 @@ Integration tests create a uniquely named LocalDB database per test class (`Gaia
 | R9 | S8 | Unit, Integration |
 | R10 | S9 | Integration |
 | R11 | S9 | Integration |
-| NFR2, NFR5, NFR6 | S4, S4, S2 | Unit |
+| NFR2, NFR6 | S4, S2 | Unit |
 | NFR3 | S1, S10 | Manual (verify phase, fresh clone) |
 | NFR1, NFR4 | all | Manual (verify phase) |
 
@@ -382,7 +382,7 @@ Integration tests create a uniquely named LocalDB database per test class (`Gaia
 - **S13, added after hands-on testing:** a formula that could never run is refused when it's saved, not when someone presses Calculate.
   - **Types** are checked against the input type (`A ^ B` with Text inputs is refused with a plain message saying to choose Number). Fixed parts that always fail (`A / 0`, `sqrt(-1)`) are refused too.
   - The form explains each field in one line (R4.AC8, R4.AC9, R12.AC9, A11).
-- Every acceptance criterion is traced to passing tests: unit 319, integration 116, component 67, E2E 6. CI runs the unit and component levels on every push.
+- Every acceptance criterion is traced to passing tests: unit 318, integration 116, component 67, E2E 6. CI runs the unit and component levels on every push.
 - From a fresh clone, `scripts/run.ps1` reaches a running app in under a minute (NFR3). A warm execute takes ~18 ms (NFR1).
 
 **Main trade-offs:**

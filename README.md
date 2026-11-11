@@ -8,8 +8,6 @@ A platform that runs **operations on two inputs**, Field A and Field B. Operatio
 - **Client:** React (JavaScript) + Vite, with two views: **Calculator** and **Manage operations**. The client only displays; every result and every validation comes from the API.
 - **Bonus (Part B):** every run is stored. After Calculate, the UI shows the last 3 runs of the same operation and this month's count. The server keeps an error log and a request/response log.
 
-The marker comment **`// A34D`** is line 1 of [`src/Gaia.Api/Program.cs`](src/Gaia.Api/Program.cs).
-
 ## Contents
 
 [Prerequisites](#prerequisites) · [Run](#run) · [Try it](#try-it) · [Tests](#tests) · [API](#api) · [Formula language](#formula-language) · [How it works](#how-it-works) · [Configuration](#configuration) · [Logs](#logs) · [Design decisions and interpretations](#design-decisions-and-interpretations) · [Security](#security) · [Known limitations](#known-limitations) · [With more time](#with-more-time) · [Troubleshooting](#troubleshooting)
@@ -60,7 +58,7 @@ npm --prefix client run dev
 
 | Level | What it covers | Command | Count |
 |---|---|---|---|
-| Unit (server) | formula engine, services, history rules, weather handler | `dotnet test tests/Gaia.Core.Tests` | 319 |
+| Unit (server) | formula engine, services, history rules, weather handler | `dotnet test tests/Gaia.Core.Tests` | 318 |
 | Integration (server, needs LocalDB) | the HTTP API against a real SQL Server database (one test database per test class, dropped afterwards), logs | `dotnet test tests/Gaia.Api.Tests` | 116 |
 | Component (client) | React views with a fake API | `npm --prefix client test -- --run` | 67 |
 | E2E (Playwright) | the real app in Chromium: calculate, error, add a formula and use it, history, long values stay inside the card | `npm --prefix client run e2e` (first time: `npx --prefix client playwright install chromium`) | 6 |

@@ -12,7 +12,7 @@ A platform that runs *operations* on exactly two inputs (Field A and Field B) an
 | **End user** | Enter Field A, pick an operation, enter Field B, press Calculate, see the result (and, bonus, recent history). |
 | **External application** | Discover the available operations and execute one programmatically, with machine-readable results and errors. |
 | **Operator** | Whoever changes the catalog — not a user account; anyone who knows the management key (R13, A6). Adds, changes and removes operations without a code change or redeployment. |
-| **Reviewer** (assignment evaluator) | Clone the repo, run it locally with documented steps, read the code, find the "A34D" comment. |
+| **Reviewer** (assignment evaluator) | Clone the repo, run it locally with documented steps, read the code. |
 | **Weather provider** (external system) | Supplies today's forecast for a coordinate; may be slow or unavailable. |
 
 ## Scope
@@ -33,7 +33,7 @@ A platform that runs *operations* on exactly two inputs (Field A and Field B) an
 - **C1 · Server stack:** the server-side application is developed in **C# on .NET** [§ general, 2.1].
 - **C2 · Database:** a database is optional for Part A; if one is used it must be **Oracle (XE)** or **Microsoft SQL Server (Developer/Express)** [2.1]. Part B history requires a database [B.1.1]. **Decision (2026-11-09): Microsoft SQL Server** — LocalDB on the dev machine, and it must also work against SQL Server Express/Developer by changing configuration only.
 - **C3 · Client technology:** free choice [2.1, 2.2.2]. **Decision (2026-11-09): React** (needs Node.js on the dev and reviewer machines; README covers it).
-- **C4 · Marker comment:** the code must contain the comment **"A34D"** — flagged "very important" by the assignment [2.1].
+- ~~**C4 · Marker comment:** the code must contain the comment **"A34D"** — flagged "very important" by the assignment [2.1].~~ **Dropped 2026-11-12:** a check of the original Word file showed this instruction is written in white text (invisible when reading the document) — a marker for documents processed by AI tools, not a functional requirement. The comment and its test were removed. (The assignment allows AI use as long as the candidate can explain every line.)
 - **C5 · Tooling:** Microsoft Visual Studio is the expected IDE; the solution must open and run in it [general].
 - **C6 · Submission:** a link to the project, preferably on GitHub [general]. **Decision (2026-11-09):** a **private** GitHub repo with the reviewer invited as a collaborator.
 - **C7 · Confidentiality:** the exercise must not be shared with external parties [general] → the assignment text (`assignment.md`) is never committed to the repo.
@@ -168,7 +168,7 @@ The server writes a log of every API request and its response.
 - **NFR2 · Latency (external ops):** the weather call times out after 5 s and returns R3.AC4's error.
 - **NFR3 · Runnable by the reviewer:** with the prerequisites listed in the README installed (.NET SDK, SQL Server LocalDB/Express, Node.js), the README's steps take a fresh clone to a working server, database and UI in under 10 minutes, on Windows with Visual Studio.
 - **NFR4 · Explainable code:** no file the candidate can't walk through; no unused generated code (C8).
-- **NFR5 · Marker:** a search of the repository for "A34D" finds it as a code comment in the server code (C4).
+- ~~**NFR5 · Marker:** a search of the repository for "A34D" finds it as a code comment in the server code (C4).~~ **Dropped 2026-11-12** with C4.
 - **NFR6 · Safe definitions:** an operation defined at runtime (R4) can't execute arbitrary code on the server, read files, or call the network beyond what its kind allows.
 
 ## Assumptions
@@ -218,3 +218,4 @@ The server writes a log of every API request and its response.
 | 2026-11-10 | Added R4.AC8 (type check on save), R4.AC9 (always-failing fixed parts), R12.AC9 (form field help), A11 | User testing: `A ^ B` saved with input type Text could never run, and failed only in the Calculator with a technical message; user approved the save-time check ("go ahead and think of more cases like this") |
 | 2026-11-11 | Added R4.AC10 (unique operation names) and A12; removed the "names aren't unique" limitation | User review: the Calculator shows names, so two operations with the same name couldn't be told apart; user chose to make names unique |
 | 2026-11-11 | Added R3.AC6 (at most 15 significant digits per number input) and R5.AC6 (long values wrap) | User testing: a 28-digit input gave a result whose trailing digits were silently zeros, and the long values overflowed the history table |
+| 2026-11-12 | Dropped C4 and NFR5 (the "A34D" marker comment) | The original Word file shows the instruction in hidden white text — a marker for AI-processed documents, not a requirement; the user chose to remove the comment |

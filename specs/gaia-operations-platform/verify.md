@@ -185,3 +185,7 @@ What's left before submission is T56 (README, Submission notes, private repo) an
 - **Review (high):** 5 findings, 4 fixed, 1 skipped (efficiency only).
   - The most important fix: operations saved before the checks can still be renamed or disabled, because a save that doesn't change the formula or the input type isn't re-checked.
 - **Verdict unchanged:** ✅ every AC passes; nothing open in tasks.md.
+
+## Note (2026-11-12)
+
+C4 and NFR5 (the "A34D" marker comment) were dropped after this verification: the instruction turned out to be hidden white text in the original Word file. The comment and its test were removed (T74); see the spec changelog.
