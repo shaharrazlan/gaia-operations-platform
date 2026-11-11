@@ -349,6 +349,17 @@ select:disabled {
   text-align: left;
 }
 
+/* A long number or text may break anywhere, so the table never grows past the card (R5.AC6). */
+.history-table td {
+  overflow-wrap: anywhere;
+}
+
+/* …except the time: a date is short and reads badly when split. */
+.history-table td.history-time {
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
 .history-table th {
   color: var(--muted);
   font-weight: 600;

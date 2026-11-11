@@ -29,7 +29,7 @@ export default function App() {
           ))}
         </nav>
       </header>
-      <section className="card">
+      <section className="card" data-testid="view-card">
         {view === 'calculator' ? (
           <CalculatorView />
         ) : (

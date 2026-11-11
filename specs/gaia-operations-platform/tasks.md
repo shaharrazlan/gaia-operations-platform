@@ -675,21 +675,23 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Commit: —
   - Note: red seen first (6 rejected cases passed through). Significant digits = digits with the sign and point removed and zeros trimmed from both ends, so every shown result (at most 15 significant digits) is still a valid input. Coordinates go through the same check. Unit 319/319.
 
-- [ ] **T72 · Long values wrap inside the calculator card**
+- [x] **T72 · Long values wrap inside the calculator card**
   - Covers: R5.AC6 · Step S15
-  - Files: `client/src/styles.css`, `client/e2e/layout.spec.js`
+  - Files: `client/src/styles.css`, `client/e2e/layout.spec.js`, `client/src/components/HistoryPanel.jsx` (time-cell class), `client/src/App.jsx` (card test id)
   - Tests: E2E "R5.AC6: a very long result and its history row stay inside the card (no sideways scroll)"
   - Depends on: —
   - Done when: E2E green; component suite and lint green.
   - Commit: —
+  - Note: red seen first with the CSS fix set aside (page overflowed sideways by 1816 px), green with it. History cells may break anywhere; the time cell stays on one line. Checked in the browser at 800 px and 375 px (no overflow). The E2E test finds the card by `data-testid`, not a CSS class.
 
-- [ ] **T73 · S15 docs, review, all levels**
+- [x] **T73 · S15 docs, review, all levels**
   - Covers: S15 · Step S15
   - Files: `README.md` (formula rules, known limitations, counts), `specs/gaia-operations-platform/plan.md` (Submission notes)
   - Tests: every level green (`scripts/test-all.ps1`); CI green after push
   - Depends on: T71, T72
   - Done when: review findings fixed; pushed; CI green.
   - Commit: —
+  - Review (high), 4 findings, all fixed: a README note that JSON numbers over 15 significant digits are refused; README counts and Submission notes; the E2E test uses a test id; T72's file list. All levels green: unit 319, integration 116, component 67, E2E 6; build 0 warnings.
 
 ## Submit (always last)
 

@@ -378,10 +378,11 @@ Integration tests create a uniquely named LocalDB database per test class (`Gaia
 **What was delivered:**
 - All of R1–R13: Part A, the "without development" management (API + screen + management key), and every Part B bonus (history, last 3 runs, monthly count, error log, request/response log).
 - **S14, added after review:** operation names are unique (ignoring case), so the Calculator never shows two identical names. The rule is checked in the service and enforced by a database index, and the upgrade fixes clashes in existing databases (R4.AC10, A12).
+- **S15, added after user testing:** a number input may have at most 15 significant digits, because calculations are precise to 15. A longer number is refused instead of giving a result that only looks exact. Long values wrap inside the calculator card (R3.AC6, R5.AC6).
 - **S13, added after hands-on testing:** a formula that could never run is refused when it's saved, not when someone presses Calculate.
   - **Types** are checked against the input type (`A ^ B` with Text inputs is refused with a plain message saying to choose Number). Fixed parts that always fail (`A / 0`, `sqrt(-1)`) are refused too.
   - The form explains each field in one line (R4.AC8, R4.AC9, R12.AC9, A11).
-- Every acceptance criterion is traced to passing tests: unit 307, integration 116, component 67, E2E 5. CI runs the unit and component levels on every push.
+- Every acceptance criterion is traced to passing tests: unit 319, integration 116, component 67, E2E 6. CI runs the unit and component levels on every push.
 - From a fresh clone, `scripts/run.ps1` reaches a running app in under a minute (NFR3). A warm execute takes ~18 ms (NFR1).
 
 **Main trade-offs:**

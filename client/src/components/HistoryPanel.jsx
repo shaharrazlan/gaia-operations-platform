@@ -34,7 +34,7 @@ export default function HistoryPanel({ operation, history }) {
                 <td>{run.fieldA}</td>
                 <td>{run.fieldB}</td>
                 <td>{run.result}</td>
-                <td>{timeFormat.format(new Date(run.createdAtUtc))}</td>
+                <td className="history-time">{timeFormat.format(new Date(run.createdAtUtc))}</td>
               </tr>
             ))}
           </tbody>

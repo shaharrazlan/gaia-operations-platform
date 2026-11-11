@@ -60,10 +60,10 @@ npm --prefix client run dev
 
 | Level | What it covers | Command | Count |
 |---|---|---|---|
-| Unit (server) | formula engine, services, history rules, weather handler | `dotnet test tests/Gaia.Core.Tests` | 307 |
+| Unit (server) | formula engine, services, history rules, weather handler | `dotnet test tests/Gaia.Core.Tests` | 319 |
 | Integration (server, needs LocalDB) | the HTTP API against a real SQL Server database (one test database per test class, dropped afterwards), logs | `dotnet test tests/Gaia.Api.Tests` | 116 |
 | Component (client) | React views with a fake API | `npm --prefix client test -- --run` | 67 |
-| E2E (Playwright) | the real app in Chromium: calculate, error, add a formula and use it, history | `npm --prefix client run e2e` (first time: `npx --prefix client playwright install chromium`) | 5 |
+| E2E (Playwright) | the real app in Chromium: calculate, error, add a formula and use it, history, long values stay inside the card | `npm --prefix client run e2e` (first time: `npx --prefix client playwright install chromium`) | 6 |
 | All | every level in order, stops at the first failure | `powershell -ExecutionPolicy Bypass -File scripts/test-all.ps1` | |
 
 - **Test names trace to the spec.** They start with an acceptance-criterion id, e.g. `R2_AC5_…` or `it('R5.AC4: …')`; the spec and the traceability matrix are in `specs/gaia-operations-platform/`.
@@ -76,6 +76,8 @@ npm --prefix client run dev
 ## API
 
 Base URL `http://localhost:5080/api`. All bodies are JSON. Field A and Field B are always sent as **text**; each operation parses them according to its input type (`Number`, `Text`, `Coordinate`).
+
+Numbers may be sent as JSON numbers too (`"fieldA": 7`). They are kept exactly as written, so a number with more than 15 significant digits, like `0.30000000000000004`, is refused with a 400. Round to 15 digits before sending.
 
 | Method and path | What it does | Key needed |
 |---|---|---|
@@ -150,7 +152,7 @@ Operators define new operations as formulas over `A` and `B`. A formula is parse
 
 | | |
 |---|---|
-| **Inputs** | `A` and `B`, already parsed by the operation's input type: `Number` (`.` decimal, e.g. `-2.5`), `Text`, or `Coordinate` (a number; A must be −90…90, B −180…180). |
+| **Inputs** | `A` and `B`, already parsed by the operation's input type: `Number` (`.` decimal, e.g. `-2.5`, at most 15 significant digits), `Text`, or `Coordinate` (a number; A must be −90…90, B −180…180). |
 | **Literals** | numbers `12`, `3.5`; text `"hello"` (write `""` for a quote inside). |
 | **Operators** | from highest to lowest: `( )`, unary `-`, `^` (power, right-associative), `* / %`, `+ -`, comparisons `== != < <= > >=`. `+` adds numbers or joins texts. Mixing them is an error; use `concat`. |
 | **Number functions** | `sqrt(x)`, `abs(x)`, `floor(x)`, `ceil(x)`, `round(x)` or `round(x, digits)`, `min(a, b, …)`, `max(a, b, …)` |
@@ -168,7 +170,7 @@ Examples: `(A + B) / 2` · `sqrt(A * A + B * B)` · `upper(A) + " " + B` · `if(
 - **Allowed on purpose.** Some things are allowed because they can work for some inputs: `if` branches of different types (`if(A > B, A, "none")`), a true/false result (`A > B`), and ignoring A or B. **Kind** is only a category for the list and isn't checked against the formula.
 - **Errors while running.** Errors that depend on the values typed in, such as division by zero when B is 0, `sqrt` of a negative A, or a result that isn't a finite number, are a `domain_error` at run time.
 - **Number formatting.** Numbers are shown in plain decimal notation with at most 15 significant digits, so `0.1 + 0.2` gives `0.3`.
-- **Size limits.** A formula is at most 500 characters and 50 levels deep. Inputs are at most 200 characters, and text results at most 1000.
+- **Size limits.** A formula is at most 500 characters and 50 levels deep. Inputs are at most 200 characters (numbers at most 15 significant digits), and text results at most 1000.
 
 **Built-in operations** (seeded): add, subtract, multiply, divide, power, concat, count (occurrences of B in A), and weather. Their name, labels and enabled state can be changed, but not their logic, and they can't be deleted. **Average** and **Hypotenuse** are seeded as ordinary custom formulas, to show what an operator can do.
 
@@ -266,7 +268,7 @@ Where the assignment was open to more than one reading, this is the reading used
 
 ## Known limitations
 
-- **Number precision.** Numbers are 64-bit floating point, shown with at most 15 significant digits and 15 decimals. A result smaller than 1e-15 shows as `0`, and a huge result (over 200 digits) can't be typed back in as an input.
+- **Number precision.** Numbers are 64-bit floating point, precise to 15 significant digits. So a number input may have at most 15 (zeros at either end don't count: `100000000000000000000` is fine), and results are shown with at most 15 significant digits and 15 decimals; a longer input is refused instead of giving a result that only looks exact. A result smaller than 1e-15 shows as `0`, and a huge result (over 200 digits) can't be typed back in, because inputs are at most 200 characters.
 - **One input type per operation.** A and B always share one input type, so an operation like "repeat text A, B times" can't be defined. There is also no function that turns a text like `"5"` into the number 5; use input type Number instead.
 - **Formulas saved before the save-time checks.** Operations saved before these checks existed aren't re-checked. They still fail safely in the Calculator, with the same plain message, until they're edited.
 - **History across a month boundary.** The E2E history test assumes it doesn't run exactly across midnight on the 1st of a month (Israel time).
