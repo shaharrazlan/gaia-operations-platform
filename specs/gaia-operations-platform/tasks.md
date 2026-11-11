@@ -639,7 +639,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: unit "R4.AC10: creating a second operation with the same name (any case, spaces) is refused", "R4.AC10: renaming onto another operation's name is refused", "R4.AC10: keeping or re-casing its own name is allowed", "R4.AC10: a deleted operation's name can be reused", "R4.AC10: a disabled operation's name still counts"
   - Depends on: —
   - Done when: tests pass; unit suite green.
-  - Commit: —
+  - Commit: a6a4cf7
   - Note: red seen first (5 refused cases passed through; the 3 "allowed" cases already passed). The check loads the catalog (enabled + disabled) and compares trimmed names ignoring case; the message names the existing operation. Unit 307/307.
 
 - [x] **T69 · Unique index in the database**
@@ -648,7 +648,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: integration "R4_AC10_POST_a_second_operation_with_the_same_name_is_409_duplicate_name", "R4_AC10_PUT_renaming_onto_another_name_is_409_duplicate_name", "R4_AC10_the_database_refuses_a_duplicate_name_even_past_the_service" (index violation → 409 `duplicate_name`)
   - Depends on: T68
   - Done when: tests pass; migration applies on an existing database; integration suite green.
-  - Commit: —
+  - Commit: 860a2a2
   - Note: red seen first (the index test passed through with no index). The filtered unique index `IX_Operations_Name` (`Name`, `IsDeleted = 0`) relies on the column's case-insensitive default collation; a violation (add or rename) becomes 409 `duplicate_name`, a primary-key clash stays `duplicate_id`. The migration first renames live clashes in an existing database (later ones get " (id)"); the SQL needed `COLLATE DATABASE_DEFAULT` on the id. Added test `R4_AC10_upgrading_a_database_with_clashing_names…` (its own database), shown to fail when the rename step is removed. Test data fixed: `ManagementTests` named every operation "Mean", and two concurrency tests renamed to "First"/"Second" — now unique per test. The repository-level tests went into `EfOperationRepositoryTests` and `MigrationTests` (not in the file list). One run stalled on LocalDB (low memory); passed after a restart.
 
 - [x] **T70 · S14 docs, review, all levels**
@@ -657,7 +657,7 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
   - Tests: every level green (`scripts/test-all.ps1`); CI green after push
   - Depends on: T68, T69
   - Done when: review findings fixed; pushed; CI green.
-  - Commit: —
+  - Commit: 5e2e7d1
   - Review (high), 4 findings:
     - Fixed 3: Swagger docs now list 409 `duplicate_name`; the migration shortens the name part, not the "(id)" suffix, so a long clash can't be cut back into a clash; the Submission notes no longer list non-unique names.
     - Skipped 1: the name check loads the whole catalog (a few dozen rows).
