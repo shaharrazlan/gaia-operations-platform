@@ -265,6 +265,78 @@ public class CatalogServiceTests
         Assert.False(saved.IsSystem);
     }
 
+    private static OperationDefinition Named(string id, string name, bool deleted = false, bool enabled = true)
+    {
+        var op = Op(id, deleted: deleted, enabled: enabled);
+        op.Name = name;
+        return op;
+    }
+
+    [Theory]
+    [InlineData("Average")]
+    [InlineData("AVERAGE")]
+    [InlineData("  average  ")]
+    public async Task R4_AC10_creating_a_second_operation_with_the_same_name_is_refused(string name)
+    {
+        var existing = Named("mean", "Average");
+        var repository = new FakeRepository(existing);
+
+        var error = await Assert.ThrowsAsync<ConflictException>(() => Service(repository).CreateAsync(Input(id: "avg2", name: name)));
+
+        Assert.Equal(ErrorCodes.DuplicateName, error.Code);
+        Assert.Equal("name", error.Field);
+        Assert.Contains("Average", error.Message);
+        Assert.Same(existing, Assert.Single(repository.Rows));
+    }
+
+    [Fact]
+    public async Task R4_AC10_renaming_onto_another_operations_name_is_refused()
+    {
+        var mean = Named("mean", "Mean");
+        var median = Named("median", "Median");
+        var repository = new FakeRepository(mean, median);
+
+        var error = await Assert.ThrowsAsync<ConflictException>(() =>
+            Service(repository).UpdateAsync("median", Same(median) with { Name = "mean" }));
+
+        Assert.Equal(ErrorCodes.DuplicateName, error.Code);
+        Assert.Same(median, repository.Rows[1]);
+    }
+
+    [Theory]
+    [InlineData("Mean")]
+    [InlineData("MEAN")]
+    public async Task R4_AC10_keeping_or_re_casing_its_own_name_is_allowed(string name)
+    {
+        var mean = Named("mean", "Mean");
+        var repository = new FakeRepository(mean, Named("median", "Median"));
+
+        var saved = await Service(repository).UpdateAsync("mean", Same(mean) with { Name = name, IsEnabled = false });
+
+        Assert.Equal(name, saved.Name);
+        Assert.False(saved.IsEnabled);
+    }
+
+    [Fact]
+    public async Task R4_AC10_a_deleted_operations_name_can_be_reused()
+    {
+        var repository = new FakeRepository(Named("old-mean", "Average", deleted: true));
+
+        var created = await Service(repository).CreateAsync(Input(id: "avg2", name: "Average"));
+
+        Assert.Equal("Average", created.Name);
+    }
+
+    [Fact]
+    public async Task R4_AC10_a_disabled_operations_name_still_counts()
+    {
+        var repository = new FakeRepository(Named("mean", "Average", enabled: false));
+
+        var error = await Assert.ThrowsAsync<ConflictException>(() => Service(repository).CreateAsync(Input(id: "avg2", name: "Average")));
+
+        Assert.Equal(ErrorCodes.DuplicateName, error.Code);
+    }
+
     [Fact]
     public async Task R4_AC8_creating_A_power_B_with_text_inputs_is_rejected_and_nothing_is_saved()
     {

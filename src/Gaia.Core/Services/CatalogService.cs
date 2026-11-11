@@ -47,6 +47,7 @@ public sealed partial class CatalogService(IOperationRepository repository, Time
         // Ids of deleted operations stay taken: their history (R7) still points at them.
         if (await repository.FindAsync(id, cancellationToken) is not null)
             throw new ConflictException($"An operation with id '{id}' already exists.", ErrorCodes.DuplicateId, "id");
+        await EnsureNameIsFreeAsync(details.Name, exceptId: null, cancellationToken);
 
         var now = time.GetUtcNow().UtcDateTime;
         return await repository.AddAsync(new OperationDefinition
@@ -80,6 +81,7 @@ public sealed partial class CatalogService(IOperationRepository repository, Time
             throw new ValidationException("Id can't be changed. Create a new operation instead.", "id");
         var version = DecodeVersion(input.Version);
         var details = CheckDetails(input);
+        await EnsureNameIsFreeAsync(details.Name, exceptId: id, cancellationToken);
 
         string? formula;
         if (current.IsSystem)
@@ -138,6 +140,19 @@ public sealed partial class CatalogService(IOperationRepository repository, Time
         await repository.FindAsync(id, cancellationToken) is { IsDeleted: false } operation
             ? operation
             : throw new NotFoundException($"Operation '{id}' was not found.");
+
+    /// <summary>
+    /// Users choose operations by name, so names are unique among enabled and disabled operations,
+    /// ignoring case (R4.AC10, A12). Deleted operations don't count. The database enforces it too (IX_Operations_Name).
+    /// </summary>
+    private async Task EnsureNameIsFreeAsync(string name, string? exceptId, CancellationToken cancellationToken)
+    {
+        var clash = (await repository.ListAsync(includeDisabled: true, cancellationToken))
+            .FirstOrDefault(o => o.Id != exceptId && string.Equals(o.Name.Trim(), name, StringComparison.OrdinalIgnoreCase));
+        if (clash is not null)
+            throw new ConflictException($"An operation named '{clash.Name}' already exists. Choose another name.",
+                ErrorCodes.DuplicateName, "name");
+    }
 
     private static byte[] DecodeVersion(string? version)
     {

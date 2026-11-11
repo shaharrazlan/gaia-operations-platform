@@ -633,13 +633,14 @@ Build order (plan): S1 → S2 → S3 → S4 → S5 → S6 → S7 → S12 → S8 
 
 ## S14 · Unique operation names   (Should) · ~0.75 h — added 2026-11-11 after user review
 
-- [ ] **T68 · Name check in CatalogService**
+- [x] **T68 · Name check in CatalogService**
   - Covers: R4.AC10 · Step S14
   - Files: `src/Gaia.Core/Services/CatalogService.cs`, `src/Gaia.Core/Errors/ErrorCodes.cs`, `tests/Gaia.Core.Tests/Services/CatalogServiceTests.cs`
   - Tests: unit "R4.AC10: creating a second operation with the same name (any case, spaces) is refused", "R4.AC10: renaming onto another operation's name is refused", "R4.AC10: keeping or re-casing its own name is allowed", "R4.AC10: a deleted operation's name can be reused", "R4.AC10: a disabled operation's name still counts"
   - Depends on: —
   - Done when: tests pass; unit suite green.
   - Commit: —
+  - Note: red seen first (5 refused cases passed through; the 3 "allowed" cases already passed). The check loads the catalog (enabled + disabled) and compares trimmed names ignoring case; the message names the existing operation. Unit 307/307.
 
 - [ ] **T69 · Unique index in the database**
   - Covers: R4.AC10 · Step S14

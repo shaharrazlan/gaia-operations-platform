@@ -10,6 +10,7 @@ public static class ErrorCodes
     public const string OperationNotFound = "operation_not_found";
     public const string FormulaInvalid = "formula_invalid";
     public const string DuplicateId = "duplicate_id";
+    public const string DuplicateName = "duplicate_name";
     public const string SystemLogicReadonly = "system_logic_readonly";
     public const string SystemCannotDelete = "system_cannot_delete";
     public const string EditConflict = "edit_conflict";
